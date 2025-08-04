@@ -87,6 +87,7 @@ def save_model(output_dir, model_name, **kwargs): # not beautiful, update furthe
         count = epoch
         key_word = "epoch"
     elif step is not None: 
+        # count = step
         count = step
         key_word = "step"
     else: 
@@ -95,7 +96,7 @@ def save_model(output_dir, model_name, **kwargs): # not beautiful, update furthe
     
     
     # filename and path
-    save_filename = '%s_%s[%s].pth' % (model_name, key_word, count)
+    save_filename = '%s_%s_best.pth' % (model_name, key_word)
     save_path = os.path.join(output_dir, save_filename)
     
     # save data
@@ -118,7 +119,7 @@ def load_model(filename, **kwargs):
         Immutable objects will be assigned with saved values. 
     """
     
-    checkpoint = torch.load(filename, map_location='cpu') #always cpu is well
+    checkpoint = torch.load(filename, map_location='cpu', weights_only=False) #always cpu is well
 
     for k, v in kwargs.items(): 
         assert k in checkpoint, 'Key "%s" has not been found in checkpoint %s' % (k, filename)

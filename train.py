@@ -28,12 +28,16 @@ def main():
     logger.setup(log_dir=args.output_dir, device=args.device)
     #################################################
 
+    best_acc = 0
+    best_ap = 0
+
     
     ########## setup dataset and dataloader #########
     logger.info("Creating training data loader...")
 
     # data we use in GenImage, real is nature from SDv14 & SDv15
     IMAGE_FOLDERS = ["real", "ADM", "BigGAN", "glide", "Midjourney", "SD", "VQDM"]
+    # this will remove the class of data for testing
     IMAGE_FOLDERS.remove(args.exclude_class)
     logger.info(f"Exclude class: {args.exclude_class}")
 
@@ -45,7 +49,8 @@ def main():
         ) for folder in IMAGE_FOLDERS
     }
 
-    VAL_FOLDERS = IMAGE_FOLDERS + [args.exclude_class] # put at last
+    # put at last
+    VAL_FOLDERS = IMAGE_FOLDERS + [args.exclude_class]
     val_dataloaders = {
         folder: setup_val_dataloader(
             folder_path=os.path.join(args.data_root, folder, "val"), 
@@ -58,7 +63,9 @@ def main():
     
     ################## create model #################
     logger.info("Creating model 'resnet50'... ")
-    model = timm.create_model("resnet50", pretrained=True, num_classes=1024)
+    # load the pretrained model locally
+    pretrained_cfg_overlay = {'file' : r"/root/.cache/huggingface/hub/models--timm--resnet50.a1_in1k/pytorch_model.bin"}
+    model = timm.create_model("resnet50", pretrained=True, num_classes=1024, pretrained_cfg_overlay=pretrained_cfg_overlay)
     print(model)
 
     model = model.to(args.device)
@@ -84,6 +91,7 @@ def main():
     #################### training ###################
     logger.info("Start training for %d steps. " % args.total_training_steps)
 
+    # scaler of the gradient
     scaler = GradScaler(enabled=args.use_fp16)
 
     effective_step = 0
@@ -93,14 +101,14 @@ def main():
 
         optimizer.zero_grad()
 
-        # select classes for single prototypical task
+        # select classes for single prototypical task (randomly select a subset of classes as training classes)
         selected_classes = random.sample(IMAGE_FOLDERS, args.num_class_train)
 
         # get data
         batch_data = torch.stack([next(train_iters[c])[0] for c in selected_classes], dim=0) # (num_class, batch * task_size, c, h, w)
         batch_data = batch_data.to(args.device)
 
-        # make labels
+        # make labels (few-shot, repeat the class label set to align with query batches)
         labels = torch.arange(0, args.num_class_train, device=args.device).repeat(args.batch_size * args.num_query_train)
 
         batch_data = rearrange(batch_data, 'n b c h w -> (n b) c h w')
@@ -108,6 +116,7 @@ def main():
             outputs = model(batch_data)
         outputs = rearrange(outputs, '(n b t) l -> b t n l', n=args.num_class_train, b=args.batch_size) # we change the subscript sequence
 
+        # first calculate the prototypical embedding and then perform KNN, lastly, cross-entropy loss
         loss, _ = compute_prototypical_loss(outputs, labels, args.num_support_train)
 
         logger.logkv_mean("loss", loss.item())
@@ -135,21 +144,21 @@ def main():
             logger.dumpkvs()
         
         # save checkpoint
-        if step % args.save_interval == 0: 
+        if step % args.save_interval == 0:
             logger.info('Save checkpoint at step: %d', step)
             
-            kwargs = {
-                'step': step, 
-                'effective_step': effective_step, 
-                'model': model, 
-                'optimizer': optimizer, 
-                'scheduler': scheduler, 
-                'scaler': scaler, 
-                'args': args
-            }
+            #kwargs = {
+            #    'step': step,
+            #    'effective_step': effective_step,
+            #    'model': model,
+            #    'optimizer': optimizer,
+            #    'scheduler': scheduler,
+            #    'scaler': scaler,
+            #    'args': args
+            #}
 
-            save_model(os.path.join(args.output_dir, "ckpt"), args.model, **kwargs)
-            torch.cuda.empty_cache()
+            #save_model(os.path.join(args.output_dir, "ckpt"), args.model, **kwargs)
+            #torch.cuda.empty_cache()
         
         
         ##### evaluation #####
@@ -190,6 +199,27 @@ def main():
                     ap = ap_calculator(total_prob, total_label)
 
                     logger.info(f'Evaluation on {VAL_FOLDERS[i]} done. evaluating num: {len(total_prob)}, accuracy: {acc}, average precision: {ap}. ')
+                    if VAL_FOLDERS[i] == args.exclude_class:
+                        if acc > best_acc:
+                            best_acc = acc
+                            best_ap = ap
+                            logger.info(f'Save checkpoint, Best accuracy so far: {best_acc}, best AP: {best_ap}, in step: {step}')
+                            kwargs = {
+                                'step': step,
+                                'effective_step': effective_step,
+                                'model': model,
+                                'optimizer': optimizer,
+                                'scheduler': scheduler,
+                                'scaler': scaler,
+                                'args': args
+                            }
+
+                            save_model(os.path.join(args.output_dir, "ckpt"), args.model, **kwargs)
+                            
+
+        #logger.info(f'Best accuracy so far: {best_acc}, best AP: {best_ap}, in step: {step}')
+
+
         ##### evaluation done #####
     
     #################################################

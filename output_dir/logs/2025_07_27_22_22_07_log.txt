@@ -1,0 +1,3 @@
+2025-07-27 22:22:07 logger.py[line:302] INFO Logger setup done. 
+2025-07-27 22:22:07 train.py[line:33] INFO Creating training data loader...
+2025-07-27 22:22:07 train.py[line:38] INFO Exclude class: VQDM
