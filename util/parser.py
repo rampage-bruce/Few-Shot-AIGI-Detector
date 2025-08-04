@@ -60,7 +60,7 @@ class TrainParser(ModelParser):
         self.parser.add_argument('--accumulation_steps', type=int, default=1, help='Accumulate gradient iterations (for increasing the effective batch size under memory constraints). ')
         self.parser.add_argument('--save_interval', type=int, default=10000, help='Interval between saving model weights. ')
         self.parser.add_argument('--log_interval', type=int, default=1000, help='Interval between logs. ')
-        self.parser.add_argument('--eval_interval', type=int, default=10000, help='Interval between logs. ')
+        self.parser.add_argument('--eval_interval', type=int, default=1000, help='Interval between logs. ')
 
         # add other options if you want
 

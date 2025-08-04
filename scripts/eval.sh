@@ -3,9 +3,9 @@ OUTPUT_PATH='./output_dir'
 SEED=42
 
 # test class
-TEST_CLASS="ADM"
+TEST_CLASS="VQDM"
 
-CKPT_PATH="your_ckpt_path/resnet50_200000.pth"
+CKPT_PATH="/root/autodl-tmp/Few-Shot-AIGI-Detector/output_dir/ckpt/resnet50_step_best_glide.pth"
 
 data_root=(
     "data/GenImage" \

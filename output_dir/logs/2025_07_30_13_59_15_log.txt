@@ -1,0 +1,173 @@
+2025-07-30 13:59:15 logger.py[line:302] INFO Logger setup done. 
+2025-07-30 13:59:15 train.py[line:36] INFO Creating training data loader...
+2025-07-30 13:59:15 train.py[line:41] INFO Exclude class: Midjourney
+2025-07-30 13:59:47 train.py[line:63] INFO Creating model 'resnet50'... 
+2025-07-30 13:59:48 train.py[line:73] INFO Creating optimizer and scheduler... 
+2025-07-30 13:59:48 train.py[line:89] INFO Start training for 200000 steps. 
+2025-07-30 14:25:28 train.py[line:139] DEBUG {'loss': 0.2465811481475829, 'step': 1000, 'effective_step': 1000, 'lr': 0.0001}
+2025-07-30 14:25:28 train.py[line:161] INFO Evaluating at step: 1000
+2025-07-30 14:25:37 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9139999747276306, average precision: 0.9486891031265259. 
+2025-07-30 14:25:44 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9964444637298584, average precision: 0.9992507696151733. 
+2025-07-30 14:25:51 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9886666536331177, average precision: 0.9972788095474243. 
+2025-07-30 14:26:18 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9263333082199097, average precision: 0.9615333676338196. 
+2025-07-30 14:26:26 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9592221975326538, average precision: 0.9804205894470215. 
+2025-07-30 14:26:55 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.8209999799728394, average precision: 0.8732742667198181. 
+2025-07-30 14:26:55 train.py[line:201] INFO Save checkpoint, Best accuracy so far: 0.8209999799728394, best AP: 0.8732742667198181, in step: 1000
+2025-07-30 14:37:17 train.py[line:139] DEBUG {'loss': 0.07866173648834227, 'step': 2000, 'effective_step': 2000, 'lr': 0.0001}
+2025-07-30 14:37:17 train.py[line:161] INFO Evaluating at step: 2000
+2025-07-30 14:37:24 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9184444546699524, average precision: 0.9533407688140869. 
+2025-07-30 14:37:31 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9951111078262329, average precision: 0.9991576671600342. 
+2025-07-30 14:37:39 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9903333187103271, average precision: 0.9971616268157959. 
+2025-07-30 14:38:05 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9420952200889587, average precision: 0.9700188636779785. 
+2025-07-30 14:38:13 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9754444360733032, average precision: 0.9917594194412231. 
+2025-07-30 14:38:41 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.8303333520889282, average precision: 0.8731143474578857. 
+2025-07-30 14:38:41 train.py[line:201] INFO Save checkpoint, Best accuracy so far: 0.8303333520889282, best AP: 0.8731143474578857, in step: 2000
+2025-07-30 14:49:02 train.py[line:139] DEBUG {'loss': 0.04857252746820453, 'step': 3000, 'effective_step': 3000, 'lr': 0.0001}
+2025-07-30 14:49:02 train.py[line:161] INFO Evaluating at step: 3000
+2025-07-30 14:49:10 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9514444470405579, average precision: 0.9728834629058838. 
+2025-07-30 14:49:17 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9972222447395325, average precision: 0.99951171875. 
+2025-07-30 14:49:24 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9941111207008362, average precision: 0.9981397390365601. 
+2025-07-30 14:49:50 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9609047770500183, average precision: 0.9840847253799438. 
+2025-07-30 14:49:58 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9904444217681885, average precision: 0.996749758720398. 
+2025-07-30 14:50:27 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.8455555438995361, average precision: 0.8887457847595215. 
+2025-07-30 14:50:27 train.py[line:201] INFO Save checkpoint, Best accuracy so far: 0.8455555438995361, best AP: 0.8887457847595215, in step: 3000
+2025-07-30 15:00:48 train.py[line:139] DEBUG {'loss': 0.04008965009450917, 'step': 4000, 'effective_step': 4000, 'lr': 0.0001}
+2025-07-30 15:00:48 train.py[line:161] INFO Evaluating at step: 4000
+2025-07-30 15:00:56 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9695555567741394, average precision: 0.986677348613739. 
+2025-07-30 15:01:03 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9990000128746033, average precision: 0.9998822212219238. 
+2025-07-30 15:01:10 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9946666955947876, average precision: 0.9987941384315491. 
+2025-07-30 15:01:36 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9657142758369446, average precision: 0.9862515926361084. 
+2025-07-30 15:01:43 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9919999837875366, average precision: 0.9978122711181641. 
+2025-07-30 15:02:13 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.8166666626930237, average precision: 0.8639789819717407. 
+2025-07-30 15:12:33 train.py[line:139] DEBUG {'loss': 0.03062487351894382, 'step': 5000, 'effective_step': 5000, 'lr': 0.0001}
+2025-07-30 15:12:33 train.py[line:161] INFO Evaluating at step: 5000
+2025-07-30 15:12:41 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9754444360733032, average precision: 0.9901397228240967. 
+2025-07-30 15:12:48 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9992222189903259, average precision: 0.9994842410087585. 
+2025-07-30 15:12:55 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9965555667877197, average precision: 0.9987646341323853. 
+2025-07-30 15:13:21 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9764761924743652, average precision: 0.9914692044258118. 
+2025-07-30 15:13:29 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9891111254692078, average precision: 0.996470034122467. 
+2025-07-30 15:13:58 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.8812222480773926, average precision: 0.9262850284576416. 
+2025-07-30 15:13:58 train.py[line:201] INFO Save checkpoint, Best accuracy so far: 0.8812222480773926, best AP: 0.9262850284576416, in step: 5000
+2025-07-30 15:24:16 train.py[line:139] DEBUG {'loss': 0.0267930512428284, 'step': 6000, 'effective_step': 6000, 'lr': 0.0001}
+2025-07-30 15:24:16 train.py[line:161] INFO Evaluating at step: 6000
+2025-07-30 15:24:24 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9734444618225098, average precision: 0.9890172481536865. 
+2025-07-30 15:24:31 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9988889098167419, average precision: 0.999585747718811. 
+2025-07-30 15:24:38 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9975555539131165, average precision: 0.9993022680282593. 
+2025-07-30 15:25:05 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9804762005805969, average precision: 0.9928469657897949. 
+2025-07-30 15:25:12 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9946666955947876, average precision: 0.9986740350723267. 
+2025-07-30 15:25:41 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.859000027179718, average precision: 0.9044007062911987. 
+2025-07-30 15:36:04 train.py[line:139] DEBUG {'loss': 0.02507526820898051, 'step': 7000, 'effective_step': 7000, 'lr': 0.0001}
+2025-07-30 15:36:04 train.py[line:161] INFO Evaluating at step: 7000
+2025-07-30 15:36:12 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9807778000831604, average precision: 0.9923598766326904. 
+2025-07-30 15:36:19 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9991111159324646, average precision: 0.9995461106300354. 
+2025-07-30 15:36:27 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9965555667877197, average precision: 0.9992746114730835. 
+2025-07-30 15:36:53 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9797618985176086, average precision: 0.993545413017273. 
+2025-07-30 15:37:00 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9940000176429749, average precision: 0.9978684782981873. 
+2025-07-30 15:37:29 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.8734444379806519, average precision: 0.9131290912628174. 
+2025-07-30 15:47:47 train.py[line:139] DEBUG {'loss': 0.022226907849311806, 'step': 8000, 'effective_step': 8000, 'lr': 0.0001}
+2025-07-30 15:47:47 train.py[line:161] INFO Evaluating at step: 8000
+2025-07-30 15:47:55 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9824444651603699, average precision: 0.9923232793807983. 
+2025-07-30 15:48:02 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9987778067588806, average precision: 0.9995816946029663. 
+2025-07-30 15:48:09 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9981111288070679, average precision: 0.9995079636573792. 
+2025-07-30 15:48:35 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9823809266090393, average precision: 0.994005560874939. 
+2025-07-30 15:48:43 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.996222198009491, average precision: 0.9991310834884644. 
+2025-07-30 15:49:11 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.8744444251060486, average precision: 0.9127929210662842. 
+2025-07-30 15:59:33 train.py[line:139] DEBUG {'loss': 0.0190714601278305, 'step': 9000, 'effective_step': 9000, 'lr': 0.0001}
+2025-07-30 15:59:33 train.py[line:161] INFO Evaluating at step: 9000
+2025-07-30 15:59:41 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9822221994400024, average precision: 0.9924715161323547. 
+2025-07-30 15:59:48 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9990000128746033, average precision: 0.999710202217102. 
+2025-07-30 15:59:55 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9974444508552551, average precision: 0.999323844909668. 
+2025-07-30 16:00:22 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9781428575515747, average precision: 0.9919987916946411. 
+2025-07-30 16:00:29 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9952222108840942, average precision: 0.9980661869049072. 
+2025-07-30 16:00:58 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.8498888611793518, average precision: 0.8969295024871826. 
+2025-07-30 16:10:59 train.py[line:139] DEBUG {'loss': 0.018257209062576284, 'step': 10000, 'effective_step': 10000, 'lr': 0.0001}
+2025-07-30 16:10:59 train.py[line:143] INFO Save checkpoint at step: 10000
+2025-07-30 16:10:59 train.py[line:161] INFO Evaluating at step: 10000
+2025-07-30 16:11:07 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9577777981758118, average precision: 0.9759348630905151. 
+2025-07-30 16:11:14 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.987666666507721, average precision: 0.9958181381225586. 
+2025-07-30 16:11:21 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9952222108840942, average precision: 0.9988095760345459. 
+2025-07-30 16:11:48 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9762856960296631, average precision: 0.9918588995933533. 
+2025-07-30 16:11:56 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.992222249507904, average precision: 0.9978673458099365. 
+2025-07-30 16:12:24 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.8212222456932068, average precision: 0.8694751262664795. 
+2025-07-30 16:22:45 train.py[line:139] DEBUG {'loss': 0.0163626752495766, 'step': 11000, 'effective_step': 11000, 'lr': 0.0001}
+2025-07-30 16:22:45 train.py[line:161] INFO Evaluating at step: 11000
+2025-07-30 16:22:53 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9532222151756287, average precision: 0.9732095003128052. 
+2025-07-30 16:23:00 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9975555539131165, average precision: 0.99912428855896. 
+2025-07-30 16:23:08 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9941111207008362, average precision: 0.998367190361023. 
+2025-07-30 16:23:34 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9782857298851013, average precision: 0.992282509803772. 
+2025-07-30 16:23:42 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9883333444595337, average precision: 0.9964423775672913. 
+2025-07-30 16:24:11 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.8655555844306946, average precision: 0.902686595916748. 
+2025-07-30 16:34:33 train.py[line:139] DEBUG {'loss': 0.014739632606506336, 'step': 12000, 'effective_step': 12000, 'lr': 0.0001}
+2025-07-30 16:34:33 train.py[line:161] INFO Evaluating at step: 12000
+2025-07-30 16:34:40 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9655555486679077, average precision: 0.9832371473312378. 
+2025-07-30 16:34:48 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9926666617393494, average precision: 0.998342752456665. 
+2025-07-30 16:34:55 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9957777857780457, average precision: 0.9988623857498169. 
+2025-07-30 16:35:21 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9786190390586853, average precision: 0.9918807744979858. 
+2025-07-30 16:35:29 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9968888759613037, average precision: 0.9991410374641418. 
+2025-07-30 16:35:58 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.8177777528762817, average precision: 0.8642593622207642. 
+2025-07-30 16:46:19 train.py[line:139] DEBUG {'loss': 0.014129561245441428, 'step': 13000, 'effective_step': 13000, 'lr': 0.0001}
+2025-07-30 16:46:19 train.py[line:161] INFO Evaluating at step: 13000
+2025-07-30 16:46:27 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9666666388511658, average precision: 0.9836552143096924. 
+2025-07-30 16:46:34 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.996999979019165, average precision: 0.9989901781082153. 
+2025-07-30 16:46:41 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9974444508552551, average precision: 0.9993518590927124. 
+2025-07-30 16:47:09 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.968999981880188, average precision: 0.9868762493133545. 
+2025-07-30 16:47:17 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9931111335754395, average precision: 0.9973373413085938. 
+2025-07-30 16:47:46 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.8478888869285583, average precision: 0.8882997632026672. 
+2025-07-30 16:58:02 train.py[line:139] DEBUG {'loss': 0.013015771090984353, 'step': 14000, 'effective_step': 14000, 'lr': 0.0001}
+2025-07-30 16:58:02 train.py[line:161] INFO Evaluating at step: 14000
+2025-07-30 16:58:10 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9626666903495789, average precision: 0.9810489416122437. 
+2025-07-30 16:58:17 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9978888630867004, average precision: 0.9997119903564453. 
+2025-07-30 16:58:24 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9974444508552551, average precision: 0.9994357824325562. 
+2025-07-30 16:58:51 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9742380976676941, average precision: 0.9894235134124756. 
+2025-07-30 16:58:58 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9975555539131165, average precision: 0.9993945360183716. 
+2025-07-30 16:59:26 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.7978888750076294, average precision: 0.8433816432952881. 
+2025-07-30 17:09:42 train.py[line:139] DEBUG {'loss': 0.011605506181716923, 'step': 15000, 'effective_step': 15000, 'lr': 0.0001}
+2025-07-30 17:09:42 train.py[line:161] INFO Evaluating at step: 15000
+2025-07-30 17:09:50 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9601110816001892, average precision: 0.9800214767456055. 
+2025-07-30 17:09:57 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9918888807296753, average precision: 0.9976394176483154. 
+2025-07-30 17:10:04 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9959999918937683, average precision: 0.9989197254180908. 
+2025-07-30 17:10:32 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9827142953872681, average precision: 0.9940894842147827. 
+2025-07-30 17:10:39 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9965555667877197, average precision: 0.9993425607681274. 
+2025-07-30 17:11:08 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.8028888702392578, average precision: 0.8467490077018738. 
+2025-07-30 17:21:25 train.py[line:139] DEBUG {'loss': 0.013042339444160474, 'step': 16000, 'effective_step': 16000, 'lr': 0.0001}
+2025-07-30 17:21:25 train.py[line:161] INFO Evaluating at step: 16000
+2025-07-30 17:21:33 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9103333353996277, average precision: 0.9402565956115723. 
+2025-07-30 17:21:41 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9627777934074402, average precision: 0.9854854345321655. 
+2025-07-30 17:21:48 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9837777614593506, average precision: 0.9945770502090454. 
+2025-07-30 17:22:15 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9513809680938721, average precision: 0.9759395718574524. 
+2025-07-30 17:22:23 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9514444470405579, average precision: 0.9709677696228027. 
+2025-07-30 17:22:52 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.7643333077430725, average precision: 0.8089863061904907. 
+2025-07-30 17:32:52 train.py[line:139] DEBUG {'loss': 0.011335022509098056, 'step': 17000, 'effective_step': 17000, 'lr': 0.0001}
+2025-07-30 17:32:52 train.py[line:161] INFO Evaluating at step: 17000
+2025-07-30 17:33:00 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9743333458900452, average precision: 0.988705039024353. 
+2025-07-30 17:33:08 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9986666440963745, average precision: 0.9996857643127441. 
+2025-07-30 17:33:15 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9978888630867004, average precision: 0.999547004699707. 
+2025-07-30 17:33:42 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9815238118171692, average precision: 0.9949062466621399. 
+2025-07-30 17:33:50 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9951111078262329, average precision: 0.9991927146911621. 
+2025-07-30 17:34:20 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.8516666889190674, average precision: 0.9067604541778564. 
+2025-07-30 17:44:20 train.py[line:139] DEBUG {'loss': 0.011032414376735676, 'step': 18000, 'effective_step': 18000, 'lr': 0.0001}
+2025-07-30 17:44:20 train.py[line:161] INFO Evaluating at step: 18000
+2025-07-30 17:44:28 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9276666641235352, average precision: 0.955234169960022. 
+2025-07-30 17:44:36 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9779999852180481, average precision: 0.9917216300964355. 
+2025-07-30 17:44:43 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9854444265365601, average precision: 0.9953244924545288. 
+2025-07-30 17:45:10 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9594285488128662, average precision: 0.9799402952194214. 
+2025-07-30 17:45:18 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9745555520057678, average precision: 0.9880582094192505. 
+2025-07-30 17:45:47 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.7976666688919067, average precision: 0.8391890525817871. 
+2025-07-30 17:56:09 train.py[line:139] DEBUG {'loss': 0.010066675126552582, 'step': 19000, 'effective_step': 19000, 'lr': 0.0001}
+2025-07-30 17:56:09 train.py[line:161] INFO Evaluating at step: 19000
+2025-07-30 17:56:18 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9900000095367432, average precision: 0.9966287612915039. 
+2025-07-30 17:56:25 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9992222189903259, average precision: 0.9996267557144165. 
+2025-07-30 17:56:32 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9978888630867004, average precision: 0.9994626641273499. 
+2025-07-30 17:57:00 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9887619018554688, average precision: 0.9972209334373474. 
+2025-07-30 17:57:07 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.995555579662323, average precision: 0.999005913734436. 
+2025-07-30 17:57:36 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.8945555686950684, average precision: 0.9302800297737122. 
+2025-07-30 17:57:36 train.py[line:201] INFO Save checkpoint, Best accuracy so far: 0.8945555686950684, best AP: 0.9302800297737122, in step: 19000
+2025-07-30 18:07:39 train.py[line:139] DEBUG {'loss': 0.00983141934871673, 'step': 20000, 'effective_step': 20000, 'lr': 0.0001}
+2025-07-30 18:07:39 train.py[line:143] INFO Save checkpoint at step: 20000
+2025-07-30 18:07:39 train.py[line:161] INFO Evaluating at step: 20000
+2025-07-30 18:07:47 train.py[line:196] INFO Evaluation on ADM done. evaluating num: 9000, accuracy: 0.9337777495384216, average precision: 0.9611592292785645. 
+2025-07-30 18:07:55 train.py[line:196] INFO Evaluation on BigGAN done. evaluating num: 9000, accuracy: 0.9819999933242798, average precision: 0.9946277141571045. 
+2025-07-30 18:08:02 train.py[line:196] INFO Evaluation on glide done. evaluating num: 9000, accuracy: 0.9872221946716309, average precision: 0.9953230619430542. 
+2025-07-30 18:08:29 train.py[line:196] INFO Evaluation on SD done. evaluating num: 21000, accuracy: 0.9590952396392822, average precision: 0.9788659811019897. 
+2025-07-30 18:08:36 train.py[line:196] INFO Evaluation on VQDM done. evaluating num: 9000, accuracy: 0.9845555424690247, average precision: 0.995093822479248. 
+2025-07-30 18:09:05 train.py[line:196] INFO Evaluation on Midjourney done. evaluating num: 9000, accuracy: 0.7446666955947876, average precision: 0.7790231704711914. 
