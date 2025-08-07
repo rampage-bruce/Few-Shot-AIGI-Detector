@@ -28,7 +28,7 @@ def main():
     # terminal writer and file writer
     logger.setup(log_dir=args.output_dir, device=args.device)
     #################################################
-
+y
     best_acc = 0
     best_ap = 0
 
