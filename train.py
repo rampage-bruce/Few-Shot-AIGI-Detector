@@ -253,7 +253,7 @@ def main():
                             save_model(os.path.join(args.output_dir, "ckpt"), 'clip', **kwargs)
                             
 
-        #logger.info(f'Best accuracy so far: {best_acc}, best AP: {best_ap}, in step: {step}')
+        logger.info(f'Best accuracy so far: {best_acc}, best AP: {best_ap}, in step: {step}')
 
 
         ##### evaluation done #####
