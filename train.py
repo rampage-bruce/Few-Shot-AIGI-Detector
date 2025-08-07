@@ -17,6 +17,7 @@ from datasets import setup_infinity_train_dataloader, setup_val_dataloader
 from util.parser import TrainParser
 from util.utils import save_model, setup_dist
 import util.logger as logger
+import open_clip
 
 
 def main(): 
@@ -37,6 +38,9 @@ def main():
 
     # data we use in GenImage, real is nature from SDv14 & SDv15
     IMAGE_FOLDERS = ["real", "ADM", "BigGAN", "glide", "Midjourney", "SD", "VQDM"]
+
+    # add generator labels
+    # labels = torch.arange(0,len(IMAGE_FOLDERS))
     # this will remove the class of data for testing
     IMAGE_FOLDERS.remove(args.exclude_class)
     logger.info(f"Exclude class: {args.exclude_class}")
@@ -62,13 +66,18 @@ def main():
 
     
     ################## create model #################
-    logger.info("Creating model 'resnet50'... ")
-    # load the pretrained model locally
-    pretrained_cfg_overlay = {'file' : r"/root/.cache/huggingface/hub/models--timm--resnet50.a1_in1k/pytorch_model.bin"}
-    model = timm.create_model("resnet50", pretrained=True, num_classes=1024, pretrained_cfg_overlay=pretrained_cfg_overlay)
-    print(model)
+    # logger.info("Creating model 'resnet50'... ")
+    # # load the pretrained model locally
+    # pretrained_cfg_overlay = {'file' : r"/root/.cache/huggingface/hub/models--timm--resnet50.a1_in1k/pytorch_model.bin"}
+    # model = timm.create_model("resnet50", pretrained=True, num_classes=1024, pretrained_cfg_overlay=pretrained_cfg_overlay)
+    # print(model)
+    # model = model.to(args.device)
 
-    model = model.to(args.device)
+    # load CLIP model
+    logger.info("Creating model 'clip'... ")
+    model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained='laion2b_s34b_b79k')
+    print(model.visual)
+    model = model.visual.to(args.device)
     #################################################
     
 
@@ -103,6 +112,30 @@ def main():
 
         # select classes for single prototypical task (randomly select a subset of classes as training classes)
         selected_classes = random.sample(IMAGE_FOLDERS, args.num_class_train)
+
+        # Use those indices to get both classes and labels
+        # selected_indices = random.sample(range(len(IMAGE_FOLDERS)), args.num_class_train)
+        # selected_classes = [IMAGE_FOLDERS[i] for i in selected_indices]
+        # selected_labels = labels[selected_indices]  # tensor of selected label IDs
+
+        # # get data with corresponding labels
+        # all_images = []
+        # all_labels = []
+        #
+        # for label_idx, class_name in zip(selected_labels,selected_classes):
+        #     images = next(train_iters[class_name])[0]
+        #     all_images.append(images)
+        #
+        #     # Create new label tensor for this batch
+        #     labels = torch.full((args.batch_size * args.num_query_train,), label_idx) # shape (batch_size * query_size)
+        #     all_labels.append(labels)
+        #
+        # # Combine all class-wise batches
+        # batch_data = torch.stack(all_images, dim=0)  # (num_class, batch_size, C, H, W)
+        # batch_data = batch_data.to(args.device)
+        #
+        # batch_labels = torch.stack(all_labels, dim=0).reshape(-1).to(args.device)  # (num_class*batch_size*query_size)
+        # batch_labels = batch_labels.to(args.device)
 
         # get data
         batch_data = torch.stack([next(train_iters[c])[0] for c in selected_classes], dim=0) # (num_class, batch * task_size, c, h, w)
@@ -179,6 +212,7 @@ def main():
                         batch_data = batch_data.to(args.device)
 
                         batch_data = rearrange(batch_data, 'n b c h w -> (n b) c h w')
+                        # (0,1)
                         labels = torch.arange(0, 2, device=args.device).repeat(args.num_query_val)
 
                         with autocast(enabled=args.use_fp16, device_type="cuda"):
@@ -186,7 +220,8 @@ def main():
                         outputs = rearrange(outputs, '(n b) l -> 1 b n l', n=2) # we change the subscript sequence
 
                         _, scores = compute_prototypical_loss(outputs, labels, args.num_support_val)
-                        
+
+                        # probability of each class (real or fake)
                         prob = scores.softmax(dim=-1).cpu()
                         labels = labels.cpu()
 
@@ -199,6 +234,7 @@ def main():
                     ap = ap_calculator(total_prob, total_label)
 
                     logger.info(f'Evaluation on {VAL_FOLDERS[i]} done. evaluating num: {len(total_prob)}, accuracy: {acc}, average precision: {ap}. ')
+                    # evaluation on unseen data
                     if VAL_FOLDERS[i] == args.exclude_class:
                         if acc > best_acc:
                             best_acc = acc
@@ -214,7 +250,7 @@ def main():
                                 'args': args
                             }
 
-                            save_model(os.path.join(args.output_dir, "ckpt"), args.model, **kwargs)
+                            save_model(os.path.join(args.output_dir, "ckpt"), 'clip', **kwargs)
                             
 
         #logger.info(f'Best accuracy so far: {best_acc}, best AP: {best_ap}, in step: {step}')

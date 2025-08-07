@@ -51,8 +51,8 @@ class TrainParser(ModelParser):
         self.parser.add_argument('--num_query_train', type=int, default=5, help='Number of samples in query set of each class during training. ')
 
         self.parser.add_argument('--num_class_val', type=int, default=2, help='Number of classes per iteration during training. ')
-        self.parser.add_argument('--num_support_val', type=int, default=5, help='Number of samples in support set of each class during validation. ')
-        self.parser.add_argument('--num_query_val', type=int, default=15, help='Number of samples in query set of each class during validation. ')
+        self.parser.add_argument('--num_support_val', type=int, default=10, help='Number of samples in support set of each class during validation. ')
+        self.parser.add_argument('--num_query_val', type=int, default=30, help='Number of samples in query set of each class during validation. ')
 
         self.parser.add_argument('--exclude_class', type=str, default="ADM", help='Image folder to be tested. ')
         

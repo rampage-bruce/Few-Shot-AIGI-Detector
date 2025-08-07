@@ -30,6 +30,9 @@ OMP_NUM_THREADS=1 torchrun $DISTRIBUTED_ARGS train.py \
     --batch_size 16 \
     --lr 1e-4 \
     --exclude_class $EXCLUDE_CLASS \
-    --total_training_steps 20000 \
+    --total_training_steps 200000 \
     --accumulation_steps 1 \
     --use_fp16 True \
+    --num_support_train 5 \
+    --num_support_val 10 \
+    --num_query_val 30
