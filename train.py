@@ -17,6 +17,9 @@ from datasets import setup_infinity_train_dataloader, setup_val_dataloader
 from util.parser import TrainParser
 from util.utils import save_model, setup_dist
 import util.logger as logger
+import open_clip
+import torch.nn.functional as F
+import torch.nn as nn
 
 
 def main(): 
@@ -27,6 +30,8 @@ def main():
     # terminal writer and file writer
     logger.setup(log_dir=args.output_dir, device=args.device)
     #################################################
+    best_acc = 0
+    best_ap = 0
 
     best_acc = 0
     best_ap = 0
@@ -37,6 +42,7 @@ def main():
 
     # data we use in GenImage, real is nature from SDv14 & SDv15
     IMAGE_FOLDERS = ["real", "ADM", "BigGAN", "glide", "Midjourney", "SD", "VQDM"]
+
     # this will remove the class of data for testing
     IMAGE_FOLDERS.remove(args.exclude_class)
     logger.info(f"Exclude class: {args.exclude_class}")
@@ -63,19 +69,67 @@ def main():
     
     ################## create model #################
     logger.info("Creating model 'resnet50'... ")
+
     # load the pretrained model locally
+
     pretrained_cfg_overlay = {'file' : r"/root/.cache/huggingface/hub/models--timm--resnet50.a1_in1k/pytorch_model.bin"}
     model = timm.create_model("resnet50", pretrained=True, num_classes=1024, pretrained_cfg_overlay=pretrained_cfg_overlay)
     print(model)
-
     model = model.to(args.device)
+
+    # load CLIP model
+    logger.info("Creating model 'clip'... ")
+    clip_model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained='laion2b_s34b_b79k')
+    print(clip_model.visual)
+
+    # # Freeze all layers
+    # for param in clip_model.visual.parameters():
+    #     param.requires_grad = False
+    #
+    # # Unfreeze the 10th transformer block (index 9 for 10th layer)
+    # target_block_idx = 9
+    # for param in clip_model.visual.transformer.resblocks[target_block_idx].parameters():
+    #     param.requires_grad = True
+
+
+    clip_model = clip_model.visual.to(args.device)
+
+    # ensure dimension
+    clip_output_dim = 512
+    resnet_output_dim = 1024
+
+
+    # Initialize a Fusion MLP projection
+    class FusionHead(nn.Module):
+        def __init__(self, in_dim, out_dim=512):
+            super().__init__()
+            self.proj = nn.Sequential(
+                nn.Linear(in_dim, out_dim),
+                nn.ReLU(),
+                nn.LayerNorm(out_dim)
+            )
+        def forward(self, x):
+            return self.proj(x)
+
+    fusion_head = FusionHead(in_dim = resnet_output_dim+clip_output_dim, out_dim = resnet_output_dim+clip_output_dim)
+    fusion_head.to(args.device)
     #################################################
     
 
     ######### create optimizer and criterion ########
     logger.info("Creating optimizer and scheduler... ")
     
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    # 只微调 ResNet 和 数据融合projection
+    optimizer = torch.optim.Adam(list(model.parameters()) + list(fusion_head.parameters())
+                                 , lr=args.lr)
+    
+    # optimizer including clip trainable parameters
+    # optimizer = torch.optim.Adam(
+    #     list(model.parameters()) + list(filter(lambda p: p.requires_grad, clip_model.parameters())),
+    #     lr=args.lr
+    # )
+    
     print(optimizer)
 
     # scheduler
@@ -98,11 +152,37 @@ def main():
     # starts looping
     for step in range(1, args.total_training_steps + 1): 
         model.train()
+        clip_model.eval()
+        fusion_head.train()
 
         optimizer.zero_grad()
 
         # select classes for single prototypical task (randomly select a subset of classes as training classes)
         selected_classes = random.sample(IMAGE_FOLDERS, args.num_class_train)
+
+        # Use those indices to get both classes and labels
+        # selected_indices = random.sample(range(len(IMAGE_FOLDERS)), args.num_class_train)
+        # selected_classes = [IMAGE_FOLDERS[i] for i in selected_indices]
+        # selected_labels = labels[selected_indices]  # tensor of selected label IDs
+
+        # # get data with corresponding labels
+        # all_images = []
+        # all_labels = []
+        #
+        # for label_idx, class_name in zip(selected_labels,selected_classes):
+        #     images = next(train_iters[class_name])[0]
+        #     all_images.append(images)
+        #
+        #     # Create new label tensor for this batch
+        #     labels = torch.full((args.batch_size * args.num_query_train,), label_idx) # shape (batch_size * query_size)
+        #     all_labels.append(labels)
+        #
+        # # Combine all class-wise batches
+        # batch_data = torch.stack(all_images, dim=0)  # (num_class, batch_size, C, H, W)
+        # batch_data = batch_data.to(args.device)
+        #
+        # batch_labels = torch.stack(all_labels, dim=0).reshape(-1).to(args.device)  # (num_class*batch_size*query_size)
+        # batch_labels = batch_labels.to(args.device)
 
         # get data
         batch_data = torch.stack([next(train_iters[c])[0] for c in selected_classes], dim=0) # (num_class, batch * task_size, c, h, w)
@@ -113,7 +193,16 @@ def main():
 
         batch_data = rearrange(batch_data, 'n b c h w -> (n b) c h w')
         with autocast(enabled=args.use_fp16, device_type="cuda"):
-            outputs = model(batch_data)
+            outputs_resnet = model(batch_data)
+            with torch.no_grad():
+                outputs_clip = clip_model(batch_data)
+
+            # implement normalization before concatenation in case of overweight of one embedding
+            outputs_resnet =F.normalize(outputs_resnet,p=2,dim=-1)
+            outputs_clip = F.normalize(outputs_clip,p=2,dim=-1)
+            
+            outputs = torch.cat((outputs_resnet, outputs_clip), dim=-1)
+            outputs = fusion_head(outputs)
         outputs = rearrange(outputs, '(n b t) l -> b t n l', n=args.num_class_train, b=args.batch_size) # we change the subscript sequence
 
         # first calculate the prototypical embedding and then perform KNN, lastly, cross-entropy loss
@@ -121,6 +210,9 @@ def main():
 
         logger.logkv_mean("loss", loss.item())
         scaler.scale(loss / args.accumulation_steps).backward()
+
+        del outputs_resnet, outputs_clip, outputs
+        torch.cuda.empty_cache()
         
         # accumulate
         if step % args.accumulation_steps == 0:
@@ -165,6 +257,9 @@ def main():
         if step % args.eval_interval == 0: 
             logger.info('Evaluating at step: %d', step)
             model.eval()
+            clip_model.eval()
+            fusion_head.eval()
+            
 
             acc_calculator = Accuracy(task="multiclass", num_classes=2)
             ap_calculator = AveragePrecision(task="multiclass", num_classes=2, thresholds=10)
@@ -175,18 +270,32 @@ def main():
                     prob_list = []
                     label_list = []
                     for (real_batch, _), (fake_batch, _) in tqdm(zip(val_dataloaders["real"], val_dataloaders[VAL_FOLDERS[i]])): 
+                        # this code address the unalignment of real_batch and fake_batch when running in distributed mode
+                        # min_size = min(real_batch.size(0), fake_batch.size(0))
+                        # real_batch = real_batch[:min_size]
+                        # fake_batch = fake_batch[:min_size]
+                        
                         batch_data = torch.stack([real_batch, fake_batch], dim=0) # (2, task_size, c, h, w)
                         batch_data = batch_data.to(args.device)
 
                         batch_data = rearrange(batch_data, 'n b c h w -> (n b) c h w')
+                        # (0,1)
                         labels = torch.arange(0, 2, device=args.device).repeat(args.num_query_val)
 
                         with autocast(enabled=args.use_fp16, device_type="cuda"):
-                            outputs = model(batch_data)
+                            outputs_resnet = model(batch_data)
+                            outputs_clip = clip_model(batch_data)
+
+                            outputs_resnet = F.normalize(outputs_resnet, p=2, dim=-1)
+                            outputs_clip = F.normalize(outputs_clip, p=2, dim=-1)
+                            outputs = torch.cat((outputs_resnet, outputs_clip), dim=-1)
+                            outputs = fusion_head(outputs)
+
                         outputs = rearrange(outputs, '(n b) l -> 1 b n l', n=2) # we change the subscript sequence
 
                         _, scores = compute_prototypical_loss(outputs, labels, args.num_support_val)
-                        
+
+                        # probability of each class (real or fake)
                         prob = scores.softmax(dim=-1).cpu()
                         labels = labels.cpu()
 
@@ -199,6 +308,8 @@ def main():
                     ap = ap_calculator(total_prob, total_label)
 
                     logger.info(f'Evaluation on {VAL_FOLDERS[i]} done. evaluating num: {len(total_prob)}, accuracy: {acc}, average precision: {ap}. ')
+
+                    # evaluation on unseen data
                     if VAL_FOLDERS[i] == args.exclude_class:
                         if acc > best_acc:
                             best_acc = acc
@@ -214,10 +325,17 @@ def main():
                                 'args': args
                             }
 
+
+                            save_model(os.path.join(args.output_dir, "ckpt"), 'clip', **kwargs)
+                            
+
+        logger.info(f'Best accuracy so far: {best_acc}, best AP: {best_ap}, in step: {step}')
+
                             save_model(os.path.join(args.output_dir, "ckpt"), args.model, **kwargs)
                             
 
         #logger.info(f'Best accuracy so far: {best_acc}, best AP: {best_ap}, in step: {step}')
+
 
 
         ##### evaluation done #####

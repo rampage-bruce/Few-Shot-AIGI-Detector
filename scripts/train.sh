@@ -1,9 +1,9 @@
 # example for training with 4 GPUs 
 # (in our experiment we use only one GPU but with more training steps)
 
-GPU_NUM=1
+GPU_NUM=2
 WORLD_SIZE=1
-NUM_WORKERS=8
+NUM_WORKERS=2
 SEED=42
 
 DISTRIBUTED_ARGS="
@@ -30,6 +30,10 @@ OMP_NUM_THREADS=1 torchrun $DISTRIBUTED_ARGS train.py \
     --batch_size 16 \
     --lr 1e-4 \
     --exclude_class $EXCLUDE_CLASS \
+    --total_training_steps 200000 \
     --total_training_steps 20000 \
     --accumulation_steps 1 \
     --use_fp16 True \
+    --num_support_train 5 \
+    --num_support_val 10 \
+    --num_query_val 30
