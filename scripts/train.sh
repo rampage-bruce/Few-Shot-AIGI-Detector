@@ -19,7 +19,7 @@ data_root=(
 OUTPUT_PATH='./output_dir'
 
 # test class
-EXCLUDE_CLASS="ADM"
+EXCLUDE_CLASS="glide"
 
 # execution
 OMP_NUM_THREADS=1 torchrun $DISTRIBUTED_ARGS train.py \
@@ -31,6 +31,7 @@ OMP_NUM_THREADS=1 torchrun $DISTRIBUTED_ARGS train.py \
     --lr 1e-4 \
     --exclude_class $EXCLUDE_CLASS \
     --total_training_steps 200000 \
+    --total_training_steps 20000 \
     --accumulation_steps 1 \
     --use_fp16 True \
     --num_support_train 5 \

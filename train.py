@@ -33,6 +33,9 @@ def main():
     best_acc = 0
     best_ap = 0
 
+    best_acc = 0
+    best_ap = 0
+
     
     ########## setup dataset and dataloader #########
     logger.info("Creating training data loader...")
@@ -40,8 +43,6 @@ def main():
     # data we use in GenImage, real is nature from SDv14 & SDv15
     IMAGE_FOLDERS = ["real", "ADM", "BigGAN", "glide", "Midjourney", "SD", "VQDM"]
 
-    # add generator labels
-    # labels = torch.arange(0,len(IMAGE_FOLDERS))
     # this will remove the class of data for testing
     IMAGE_FOLDERS.remove(args.exclude_class)
     logger.info(f"Exclude class: {args.exclude_class}")
@@ -68,7 +69,9 @@ def main():
     
     ################## create model #################
     logger.info("Creating model 'resnet50'... ")
-    # # load the pretrained model locally
+
+    # load the pretrained model locally
+
     pretrained_cfg_overlay = {'file' : r"/root/.cache/huggingface/hub/models--timm--resnet50.a1_in1k/pytorch_model.bin"}
     model = timm.create_model("resnet50", pretrained=True, num_classes=1024, pretrained_cfg_overlay=pretrained_cfg_overlay)
     print(model)
@@ -305,6 +308,7 @@ def main():
                     ap = ap_calculator(total_prob, total_label)
 
                     logger.info(f'Evaluation on {VAL_FOLDERS[i]} done. evaluating num: {len(total_prob)}, accuracy: {acc}, average precision: {ap}. ')
+
                     # evaluation on unseen data
                     if VAL_FOLDERS[i] == args.exclude_class:
                         if acc > best_acc:
@@ -321,10 +325,17 @@ def main():
                                 'args': args
                             }
 
+
                             save_model(os.path.join(args.output_dir, "ckpt"), 'clip', **kwargs)
                             
 
         logger.info(f'Best accuracy so far: {best_acc}, best AP: {best_ap}, in step: {step}')
+
+                            save_model(os.path.join(args.output_dir, "ckpt"), args.model, **kwargs)
+                            
+
+        #logger.info(f'Best accuracy so far: {best_acc}, best AP: {best_ap}, in step: {step}')
+
 
 
         ##### evaluation done #####
