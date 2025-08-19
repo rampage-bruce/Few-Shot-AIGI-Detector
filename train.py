@@ -18,6 +18,8 @@ from util.parser import TrainParser
 from util.utils import save_model, setup_dist
 import util.logger as logger
 import open_clip
+import torch.nn.functional as F
+import torch.nn as nn
 
 
 def main(): 
@@ -28,7 +30,6 @@ def main():
     # terminal writer and file writer
     logger.setup(log_dir=args.output_dir, device=args.device)
     #################################################
-y
     best_acc = 0
     best_ap = 0
 
@@ -66,25 +67,66 @@ y
 
     
     ################## create model #################
-    # logger.info("Creating model 'resnet50'... ")
+    logger.info("Creating model 'resnet50'... ")
     # # load the pretrained model locally
-    # pretrained_cfg_overlay = {'file' : r"/root/.cache/huggingface/hub/models--timm--resnet50.a1_in1k/pytorch_model.bin"}
-    # model = timm.create_model("resnet50", pretrained=True, num_classes=1024, pretrained_cfg_overlay=pretrained_cfg_overlay)
-    # print(model)
-    # model = model.to(args.device)
+    pretrained_cfg_overlay = {'file' : r"/root/.cache/huggingface/hub/models--timm--resnet50.a1_in1k/pytorch_model.bin"}
+    model = timm.create_model("resnet50", pretrained=True, num_classes=1024, pretrained_cfg_overlay=pretrained_cfg_overlay)
+    print(model)
+    model = model.to(args.device)
 
     # load CLIP model
     logger.info("Creating model 'clip'... ")
-    model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained='laion2b_s34b_b79k')
-    print(model.visual)
-    model = model.visual.to(args.device)
+    clip_model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained='laion2b_s34b_b79k')
+    print(clip_model.visual)
+
+    # # Freeze all layers
+    # for param in clip_model.visual.parameters():
+    #     param.requires_grad = False
+    #
+    # # Unfreeze the 10th transformer block (index 9 for 10th layer)
+    # target_block_idx = 9
+    # for param in clip_model.visual.transformer.resblocks[target_block_idx].parameters():
+    #     param.requires_grad = True
+
+
+    clip_model = clip_model.visual.to(args.device)
+
+    # ensure dimension
+    clip_output_dim = 512
+    resnet_output_dim = 1024
+
+
+    # Initialize a Fusion MLP projection
+    class FusionHead(nn.Module):
+        def __init__(self, in_dim, out_dim=512):
+            super().__init__()
+            self.proj = nn.Sequential(
+                nn.Linear(in_dim, out_dim),
+                nn.ReLU(),
+                nn.LayerNorm(out_dim)
+            )
+        def forward(self, x):
+            return self.proj(x)
+
+    fusion_head = FusionHead(in_dim = resnet_output_dim+clip_output_dim, out_dim = resnet_output_dim+clip_output_dim)
+    fusion_head.to(args.device)
     #################################################
     
 
     ######### create optimizer and criterion ########
     logger.info("Creating optimizer and scheduler... ")
     
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    # 只微调 ResNet 和 数据融合projection
+    optimizer = torch.optim.Adam(list(model.parameters()) + list(fusion_head.parameters())
+                                 , lr=args.lr)
+    
+    # optimizer including clip trainable parameters
+    # optimizer = torch.optim.Adam(
+    #     list(model.parameters()) + list(filter(lambda p: p.requires_grad, clip_model.parameters())),
+    #     lr=args.lr
+    # )
+    
     print(optimizer)
 
     # scheduler
@@ -107,6 +149,8 @@ y
     # starts looping
     for step in range(1, args.total_training_steps + 1): 
         model.train()
+        clip_model.eval()
+        fusion_head.train()
 
         optimizer.zero_grad()
 
@@ -146,7 +190,16 @@ y
 
         batch_data = rearrange(batch_data, 'n b c h w -> (n b) c h w')
         with autocast(enabled=args.use_fp16, device_type="cuda"):
-            outputs = model(batch_data)
+            outputs_resnet = model(batch_data)
+            with torch.no_grad():
+                outputs_clip = clip_model(batch_data)
+
+            # implement normalization before concatenation in case of overweight of one embedding
+            outputs_resnet =F.normalize(outputs_resnet,p=2,dim=-1)
+            outputs_clip = F.normalize(outputs_clip,p=2,dim=-1)
+            
+            outputs = torch.cat((outputs_resnet, outputs_clip), dim=-1)
+            outputs = fusion_head(outputs)
         outputs = rearrange(outputs, '(n b t) l -> b t n l', n=args.num_class_train, b=args.batch_size) # we change the subscript sequence
 
         # first calculate the prototypical embedding and then perform KNN, lastly, cross-entropy loss
@@ -154,6 +207,9 @@ y
 
         logger.logkv_mean("loss", loss.item())
         scaler.scale(loss / args.accumulation_steps).backward()
+
+        del outputs_resnet, outputs_clip, outputs
+        torch.cuda.empty_cache()
         
         # accumulate
         if step % args.accumulation_steps == 0:
@@ -198,6 +254,9 @@ y
         if step % args.eval_interval == 0: 
             logger.info('Evaluating at step: %d', step)
             model.eval()
+            clip_model.eval()
+            fusion_head.eval()
+            
 
             acc_calculator = Accuracy(task="multiclass", num_classes=2)
             ap_calculator = AveragePrecision(task="multiclass", num_classes=2, thresholds=10)
@@ -208,6 +267,11 @@ y
                     prob_list = []
                     label_list = []
                     for (real_batch, _), (fake_batch, _) in tqdm(zip(val_dataloaders["real"], val_dataloaders[VAL_FOLDERS[i]])): 
+                        # this code address the unalignment of real_batch and fake_batch when running in distributed mode
+                        # min_size = min(real_batch.size(0), fake_batch.size(0))
+                        # real_batch = real_batch[:min_size]
+                        # fake_batch = fake_batch[:min_size]
+                        
                         batch_data = torch.stack([real_batch, fake_batch], dim=0) # (2, task_size, c, h, w)
                         batch_data = batch_data.to(args.device)
 
@@ -216,7 +280,14 @@ y
                         labels = torch.arange(0, 2, device=args.device).repeat(args.num_query_val)
 
                         with autocast(enabled=args.use_fp16, device_type="cuda"):
-                            outputs = model(batch_data)
+                            outputs_resnet = model(batch_data)
+                            outputs_clip = clip_model(batch_data)
+
+                            outputs_resnet = F.normalize(outputs_resnet, p=2, dim=-1)
+                            outputs_clip = F.normalize(outputs_clip, p=2, dim=-1)
+                            outputs = torch.cat((outputs_resnet, outputs_clip), dim=-1)
+                            outputs = fusion_head(outputs)
+
                         outputs = rearrange(outputs, '(n b) l -> 1 b n l', n=2) # we change the subscript sequence
 
                         _, scores = compute_prototypical_loss(outputs, labels, args.num_support_val)

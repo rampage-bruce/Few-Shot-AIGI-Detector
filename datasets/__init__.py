@@ -166,5 +166,6 @@ def setup_val_dataloader(
         pin_memory=pin_memory,
         drop_last=drop_last,
         is_train=False,
-        is_distributed=is_distributed
+        # is_distributed=is_distributed
+        is_distributed = False # avoid distributed processing when running evaluation
     )

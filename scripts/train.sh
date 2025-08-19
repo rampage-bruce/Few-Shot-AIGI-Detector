@@ -1,9 +1,9 @@
 # example for training with 4 GPUs 
 # (in our experiment we use only one GPU but with more training steps)
 
-GPU_NUM=1
+GPU_NUM=2
 WORLD_SIZE=1
-NUM_WORKERS=8
+NUM_WORKERS=2
 SEED=42
 
 DISTRIBUTED_ARGS="
@@ -19,7 +19,7 @@ data_root=(
 OUTPUT_PATH='./output_dir'
 
 # test class
-EXCLUDE_CLASS="glide"
+EXCLUDE_CLASS="ADM"
 
 # execution
 OMP_NUM_THREADS=1 torchrun $DISTRIBUTED_ARGS train.py \
