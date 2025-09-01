@@ -269,11 +269,12 @@ def main():
                 for i in range(1, len(VAL_FOLDERS)): 
                     prob_list = []
                     label_list = []
-                    for (real_batch, _), (fake_batch, _) in tqdm(zip(val_dataloaders["real"], val_dataloaders[VAL_FOLDERS[i]])): 
+                    for (real_batch, _), (fake_batch, _) in tqdm(zip(val_dataloaders["real"], val_dataloaders[VAL_FOLDERS[i]])):
+
                         # this code address the unalignment of real_batch and fake_batch when running in distributed mode
-                        # min_size = min(real_batch.size(0), fake_batch.size(0))
-                        # real_batch = real_batch[:min_size]
-                        # fake_batch = fake_batch[:min_size]
+                        min_size = min(real_batch.size(0), fake_batch.size(0))
+                        real_batch = real_batch[:min_size]
+                        fake_batch = fake_batch[:min_size]
                         
                         batch_data = torch.stack([real_batch, fake_batch], dim=0) # (2, task_size, c, h, w)
                         batch_data = batch_data.to(args.device)
@@ -331,7 +332,7 @@ def main():
 
         logger.info(f'Best accuracy so far: {best_acc}, best AP: {best_ap}, in step: {step}')
 
-                            save_model(os.path.join(args.output_dir, "ckpt"), args.model, **kwargs)
+        # save_model(os.path.join(args.output_dir, "ckpt"), args.model, **kwargs)
                             
 
         #logger.info(f'Best accuracy so far: {best_acc}, best AP: {best_ap}, in step: {step}')
