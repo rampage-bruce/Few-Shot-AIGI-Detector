@@ -83,13 +83,13 @@ def main():
     print(clip_model.visual)
 
     # # Freeze all layers
-    # for param in clip_model.visual.parameters():
-    #     param.requires_grad = False
-    #
+    for param in clip_model.visual.parameters():
+        param.requires_grad = False
+
     # # Unfreeze the 10th transformer block (index 9 for 10th layer)
-    # target_block_idx = 9
-    # for param in clip_model.visual.transformer.resblocks[target_block_idx].parameters():
-    #     param.requires_grad = True
+    target_block_idx = 9
+    for param in clip_model.visual.transformer.resblocks[target_block_idx].parameters():
+        param.requires_grad = True
 
 
     clip_model = clip_model.visual.to(args.device)
@@ -120,15 +120,12 @@ def main():
     logger.info("Creating optimizer and scheduler... ")
     
     # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    # 只微调 ResNet 和 数据融合projection
-    optimizer = torch.optim.Adam(list(model.parameters()) + list(fusion_head.parameters())
-                                 , lr=args.lr)
     
     # optimizer including clip trainable parameters
-    # optimizer = torch.optim.Adam(
-    #     list(model.parameters()) + list(filter(lambda p: p.requires_grad, clip_model.parameters())),
-    #     lr=args.lr
-    # )
+    optimizer = torch.optim.Adam(
+        list(model.parameters()) + list(filter(lambda p: p.requires_grad, clip_model.parameters()))+ list(fusion_head.parameters()),
+        lr=args.lr
+    )
     
     print(optimizer)
 
@@ -194,8 +191,7 @@ def main():
         batch_data = rearrange(batch_data, 'n b c h w -> (n b) c h w')
         with autocast(enabled=args.use_fp16, device_type="cuda"):
             outputs_resnet = model(batch_data)
-            with torch.no_grad():
-                outputs_clip = clip_model(batch_data)
+            outputs_clip = clip_model(batch_data)
 
             # implement normalization before concatenation in case of overweight of one embedding
             outputs_resnet =F.normalize(outputs_resnet,p=2,dim=-1)
@@ -203,6 +199,7 @@ def main():
             
             outputs = torch.cat((outputs_resnet, outputs_clip), dim=-1)
             outputs = fusion_head(outputs)
+
         outputs = rearrange(outputs, '(n b t) l -> b t n l', n=args.num_class_train, b=args.batch_size) # we change the subscript sequence
 
         # first calculate the prototypical embedding and then perform KNN, lastly, cross-entropy loss
