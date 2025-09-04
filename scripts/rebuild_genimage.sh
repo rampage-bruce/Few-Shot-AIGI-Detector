@@ -27,6 +27,10 @@
 # |   |   |......
 # |   |-- Midjourney
 # |   |-- SD
+#     |   | train
+#            | ai (including wukong)
+#     |   | val
+#            | ai (including wukong)
 # |   |-- VQDM
 
 ROOT_DIR="your_gen_image_dataset_path"
