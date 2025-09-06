@@ -38,6 +38,7 @@ def main():
 
     ########## setup dataset and dataloader #########
     logger.info("Creating training data loader...")
+    logger.info("running baseline training...")
 
     # data we use in GenImage, real is nature from SDv14 & SDv15
     IMAGE_FOLDERS = ["real", "ADM", "BigGAN", "glide", "Midjourney", "SD", "VQDM"]
@@ -70,9 +71,11 @@ def main():
 
     # load the pretrained model locally
 
-    pretrained_cfg_overlay = {'file': r"/root/.cache/huggingface/hub/models--timm--resnet50.a1_in1k/pytorch_model.bin"}
-    model = timm.create_model("resnet50", pretrained=True, num_classes=1024,
-                              pretrained_cfg_overlay=pretrained_cfg_overlay)
+    # pretrained_cfg_overlay = {'file': r"/root/.cache/huggingface/hub/models--timm--resnet50.a1_in1k/pytorch_model.bin"}
+    # model = timm.create_model("resnet50", pretrained=True, num_classes=1024,
+    #                           pretrained_cfg_overlay=pretrained_cfg_overlay)
+    # load the pretrained model from Huggingface
+    model = timm.create_model("resnet50", pretrained=True, num_classes=1024)
     print(model)
     model = model.to(args.device)
 
@@ -121,7 +124,7 @@ def main():
 
         batch_data = rearrange(batch_data, 'n b c h w -> (n b) c h w')
         with autocast(enabled=args.use_fp16, device_type="cuda"):
-            outputs_resnet = model(batch_data)
+            outputs = model(batch_data)
 
         outputs = rearrange(outputs, '(n b t) l -> b t n l', n=args.num_class_train,
                             b=args.batch_size)  # we change the subscript sequence
