@@ -135,17 +135,34 @@ def main():
 
     # Initialize a Fusion MLP projection
     class FusionHead(nn.Module):
-        def __init__(self, in_dim, out_dim=512):
+        def __init__(self, clip_dim, resnet_dim, bottleneck_dim,out_dim=512):
             super().__init__()
-            self.proj = nn.Sequential(
-                nn.Linear(in_dim, out_dim),
+            self.resnet_proj = nn.Sequential(
+                nn.Linear(resnet_dim,bottleneck_dim),
                 nn.ReLU(),
-                nn.LayerNorm(out_dim)
+                nn.LayerNorm(bottleneck_dim)
             )
-        def forward(self, x):
-            return self.proj(x)
+            self.clip_proj = nn.Sequential(
+                nn.Linear(clip_dim,bottleneck_dim),
+                nn.ReLU(),
+                nn.LayerNorm(bottleneck_dim)
+            )
+            self.fusion = nn.Sequential(
+                nn.Linear(),
+                nn.ReLU(),
+                nn.LayerNorm(out_dim),
+                nn.Dropout(0.2)
+            )
+        def forward(self, outputs_resnet, output_clip):
+            resnet_proj = self.resnet_proj(outputs_resnet)
+            clip_proj = self.clip_proj(output_clip)
+            combined = torch.cat((resnet_proj, clip_proj), dim=-1)
+            return self.fusion(combined)
 
-    fusion_head = FusionHead(in_dim = resnet_output_dim+clip_output_dim, out_dim = resnet_output_dim+clip_output_dim)
+    fusion_head = FusionHead(clip_dim = clip_output_dim,
+                             resnet_dim = resnet_output_dim,
+                             bottleneck_dim = 512,
+                             out_dim= 1024)
     fusion_head.to(args.device)
     #################################################
     

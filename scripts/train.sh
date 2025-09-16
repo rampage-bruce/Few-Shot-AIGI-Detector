@@ -15,7 +15,7 @@ else
     TRAIN_SCRIPT="train.py"
 fi
 
-GPU_NUM=2
+GPU_NUM=4
 WORLD_SIZE=1
 NUM_WORKERS=6
 SEED=42
@@ -33,7 +33,7 @@ data_root=(
 OUTPUT_PATH='./output_dir'
 
 # test class
-EXCLUDE_CLASS="VQDM"
+EXCLUDE_CLASS="BigGAN"
 
 # execution
 OMP_NUM_THREADS=1 torchrun $DISTRIBUTED_ARGS $TRAIN_SCRIPT \

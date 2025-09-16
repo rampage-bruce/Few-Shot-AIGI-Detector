@@ -13,14 +13,14 @@ from einops import rearrange
 from torchmetrics.classification import Accuracy, AveragePrecision
 
 from model.prototypical_utils import compute_prototypical_loss
-from datasets import setup_infinity_train_dataloader, setup_val_dataloader
+from datasets import setup_infinity_train_dataloader, setup_val_dataloader,pre_cache_dataset
 from util.parser import TrainParser
 from util.utils import save_model, setup_dist
 import util.logger as logger
 import open_clip
 import torch.nn.functional as F
 import torch.nn as nn
-
+import torch.distributed as dist
 
 def main():
     #################### prepare ####################
@@ -33,35 +33,58 @@ def main():
     best_acc = 0
     best_ap = 0
 
-    best_acc = 0
-    best_ap = 0
-
+    is_master = args.local_rank == 0
     ########## setup dataset and dataloader #########
     logger.info("Creating training data loader...")
     logger.info("running frozen-clip training...")
 
     # data we use in GenImage, real is nature from SDv14 & SDv15
     IMAGE_FOLDERS = ["real", "ADM", "BigGAN", "glide", "Midjourney", "SD", "VQDM"]
-
     # this will remove the class of data for testing
     IMAGE_FOLDERS.remove(args.exclude_class)
     logger.info(f"Exclude class: {args.exclude_class}")
+    # put at last
+    VAL_FOLDERS = IMAGE_FOLDERS + [args.exclude_class]
+
+    # pre-cache datasets
+    if is_master:  # Only do this on the master process
+        logger.info("Pre-caching datasets...")
+        # Pre-cache all training datasets
+        for folder in IMAGE_FOLDERS:
+            train_path = os.path.join(args.data_root, folder, "train")
+            if os.path.exists(train_path):
+                pre_cache_dataset(train_path, cache_dir=args.cache_dir)
+            else:
+                logger.info(f"Training path does not exist: {train_path}")
+
+        # Pre-cache all validation datasets
+        for folder in VAL_FOLDERS:
+
+            val_path = os.path.join(args.data_root, folder, "val")
+            if os.path.exists(val_path):
+                pre_cache_dataset(val_path, cache_dir=args.cache_dir)
+            else:
+                logger.info(f"Validation path does not exist: {val_path}")
+
+    # Wait for master to finish caching
+    if dist.is_initialized():
+        dist.barrier()
 
     train_iters = {
         folder: setup_infinity_train_dataloader(
             folder_path=os.path.join(args.data_root, folder, "train"),
             batch_size=(args.num_support_train + args.num_query_train) * args.batch_size,  # batch_size * task_size
-            num_workers=args.num_workers
+            num_workers=args.num_workers,
+            skip_validation=False
         ) for folder in IMAGE_FOLDERS
     }
 
-    # put at last
-    VAL_FOLDERS = IMAGE_FOLDERS + [args.exclude_class]
     val_dataloaders = {
         folder: setup_val_dataloader(
             folder_path=os.path.join(args.data_root, folder, "val"),
             batch_size=args.num_support_val + args.num_query_val,
             num_workers=args.num_workers,
+            skip_validation=False
         ) for folder in VAL_FOLDERS
     }
     #################################################
@@ -100,18 +123,35 @@ def main():
 
     # Initialize a Fusion MLP projection
     class FusionHead(nn.Module):
-        def __init__(self, in_dim, out_dim=512):
+        def __init__(self, clip_dim, resnet_dim, bottleneck_dim, out_dim=512):
             super().__init__()
-            self.proj = nn.Sequential(
-                nn.Linear(in_dim, out_dim),
+            self.resnet_proj = nn.Sequential(
+                nn.Linear(resnet_dim, bottleneck_dim),
                 nn.ReLU(),
-                nn.LayerNorm(out_dim)
+                nn.LayerNorm(bottleneck_dim)
+            )
+            self.clip_proj = nn.Sequential(
+                nn.Linear(clip_dim, bottleneck_dim),
+                nn.ReLU(),
+                nn.LayerNorm(bottleneck_dim)
+            )
+            self.fusion = nn.Sequential(
+                nn.Linear(),
+                nn.ReLU(),
+                nn.LayerNorm(out_dim),
+                nn.Dropout(0.2)
             )
 
-        def forward(self, x):
-            return self.proj(x)
+        def forward(self, outputs_resnet, output_clip):
+            resnet_proj = self.resnet_proj(outputs_resnet)
+            clip_proj = self.clip_proj(output_clip)
+            combined = torch.cat((resnet_proj, clip_proj), dim=-1)
+            return self.fusion(combined)
 
-    fusion_head = FusionHead(in_dim=resnet_output_dim + clip_output_dim, out_dim=resnet_output_dim + clip_output_dim)
+    fusion_head = FusionHead(clip_dim=clip_output_dim,
+                             resnet_dim=resnet_output_dim,
+                             bottleneck_dim=512,
+                             out_dim=1024)
     fusion_head.to(args.device)
     #################################################
 
