@@ -30,8 +30,6 @@ def main():
     # terminal writer and file writer
     logger.setup(log_dir=args.output_dir, device=args.device)
     #################################################
-    best_acc = 0
-    best_ap = 0
 
     best_acc = 0
     best_ap = 0
@@ -64,6 +62,9 @@ def main():
             num_workers=args.num_workers,
         ) for folder in VAL_FOLDERS
     }
+
+    logger.info(f"Training Folders:{IMAGE_FOLDERS}")
+    logger.info(f"Valudation Folders:{VAL_FOLDERS}")
     #################################################
 
     ################## create model #################
@@ -107,7 +108,6 @@ def main():
     # starts looping
     for step in range(1, args.total_training_steps + 1):
         model.train()
-
         optimizer.zero_grad()
 
         # select classes for single prototypical task (randomly select a subset of classes as training classes)
@@ -190,9 +190,9 @@ def main():
                     for (real_batch, _), (fake_batch, _) in tqdm(
                             zip(val_dataloaders["real"], val_dataloaders[VAL_FOLDERS[i]])):
                         # this code address the unalignment of real_batch and fake_batch when running in distributed mode
-                        min_size = min(real_batch.size(0), fake_batch.size(0))
-                        real_batch = real_batch[:min_size]
-                        fake_batch = fake_batch[:min_size]
+                        # min_size = min(real_batch.size(0), fake_batch.size(0))
+                        # real_batch = real_batch[:min_size]
+                        # fake_batch = fake_batch[:min_size]
 
                         batch_data = torch.stack([real_batch, fake_batch], dim=0)  # (2, task_size, c, h, w)
                         batch_data = batch_data.to(args.device)
@@ -237,7 +237,8 @@ def main():
                                 'optimizer': optimizer,
                                 'scheduler': scheduler,
                                 'scaler': scaler,
-                                'args': args
+                                'args': args,
+                                'test_data': args.exclude_class,
                             }
 
                             save_model(os.path.join(args.output_dir, "ckpt"), 'clip', **kwargs)

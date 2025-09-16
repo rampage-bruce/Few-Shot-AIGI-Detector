@@ -13,13 +13,14 @@ from einops import rearrange
 from torchmetrics.classification import Accuracy, AveragePrecision
 
 from model.prototypical_utils import compute_prototypical_loss
-from datasets import setup_infinity_train_dataloader, setup_val_dataloader
+from datasets import setup_infinity_train_dataloader, setup_val_dataloader,pre_cache_dataset
 from util.parser import TrainParser
 from util.utils import save_model, setup_dist
 import util.logger as logger
 import open_clip
 import torch.nn.functional as F
 import torch.nn as nn
+import torch.distributed as dist
 
 
 def main(): 
@@ -36,32 +37,64 @@ def main():
     best_acc = 0
     best_ap = 0
 
-    
+    # Check if we're the master process
+    is_master = args.local_rank == 0
+
     ########## setup dataset and dataloader #########
     logger.info("Creating training data loader...")
+    logger.info("runing full fine-tune training...")
 
     # data we use in GenImage, real is nature from SDv14 & SDv15
     IMAGE_FOLDERS = ["real", "ADM", "BigGAN", "glide", "Midjourney", "SD", "VQDM"]
-
     # this will remove the class of data for testing
     IMAGE_FOLDERS.remove(args.exclude_class)
     logger.info(f"Exclude class: {args.exclude_class}")
+    # put at last
+    VAL_FOLDERS = IMAGE_FOLDERS + [args.exclude_class]
+
+
+    # pre-cache datasets
+    if is_master:  # Only do this on the master process
+        logger.info("Pre-caching datasets...")
+        # Pre-cache all training datasets
+        for folder in IMAGE_FOLDERS:
+            train_path = os.path.join(args.data_root, folder, "train")
+            if os.path.exists(train_path):
+                pre_cache_dataset(train_path, cache_dir=args.cache_dir)
+            else:
+                logger.info(f"Training path does not exist: {train_path}")
+
+        # Pre-cache all validation datasets
+        for folder in VAL_FOLDERS:
+            
+            val_path = os.path.join(args.data_root, folder, "val")
+            if os.path.exists(val_path):
+                pre_cache_dataset(val_path, cache_dir=args.cache_dir)
+            else:
+                logger.info(f"Validation path does not exist: {val_path}")
+
+    # Wait for master to finish caching
+    if dist.is_initialized():
+        dist.barrier()
+
+
 
     train_iters = {
         folder: setup_infinity_train_dataloader(
             folder_path=os.path.join(args.data_root, folder, "train"), 
             batch_size=(args.num_support_train + args.num_query_train) * args.batch_size, # batch_size * task_size
-            num_workers=args.num_workers
+            num_workers=args.num_workers,
+            skip_validation=False
         ) for folder in IMAGE_FOLDERS
     }
 
-    # put at last
-    VAL_FOLDERS = IMAGE_FOLDERS + [args.exclude_class]
+
     val_dataloaders = {
         folder: setup_val_dataloader(
             folder_path=os.path.join(args.data_root, folder, "val"), 
             batch_size=args.num_support_val + args.num_query_val, 
-            num_workers=args.num_workers, 
+            num_workers=args.num_workers,
+            skip_validation=False
         ) for folder in VAL_FOLDERS
     }
     #################################################
@@ -72,8 +105,9 @@ def main():
 
     # load the pretrained model locally
 
-    pretrained_cfg_overlay = {'file' : r"/root/.cache/huggingface/hub/models--timm--resnet50.a1_in1k/pytorch_model.bin"}
-    model = timm.create_model("resnet50", pretrained=True, num_classes=1024, pretrained_cfg_overlay=pretrained_cfg_overlay)
+    # pretrained_cfg_overlay = {'file' : r"/root/.cache/huggingface/hub/models--timm--resnet50.a1_in1k/pytorch_model.bin"}
+    # model = timm.create_model("resnet50", pretrained=True, num_classes=1024, pretrained_cfg_overlay=pretrained_cfg_overlay)
+    model = timm.create_model("resnet50", pretrained=True, num_classes=1024)
     print(model)
     model = model.to(args.device)
 
@@ -149,7 +183,7 @@ def main():
     # starts looping
     for step in range(1, args.total_training_steps + 1): 
         model.train()
-        clip_model.eval()
+        clip_model.train()
         fusion_head.train()
 
         optimizer.zero_grad()
@@ -269,9 +303,9 @@ def main():
                     for (real_batch, _), (fake_batch, _) in tqdm(zip(val_dataloaders["real"], val_dataloaders[VAL_FOLDERS[i]])):
 
                         # this code address the unalignment of real_batch and fake_batch when running in distributed mode
-                        min_size = min(real_batch.size(0), fake_batch.size(0))
-                        real_batch = real_batch[:min_size]
-                        fake_batch = fake_batch[:min_size]
+                        # min_size = min(real_batch.size(0), fake_batch.size(0))
+                        # real_batch = real_batch[:min_size]
+                        # fake_batch = fake_batch[:min_size]
                         
                         batch_data = torch.stack([real_batch, fake_batch], dim=0) # (2, task_size, c, h, w)
                         batch_data = batch_data.to(args.device)
@@ -320,7 +354,8 @@ def main():
                                 'optimizer': optimizer,
                                 'scheduler': scheduler,
                                 'scaler': scaler,
-                                'args': args
+                                'args': args,
+                                'test_data': args.exclude_class,
                             }
 
 

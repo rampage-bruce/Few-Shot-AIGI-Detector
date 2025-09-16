@@ -61,10 +61,10 @@ def copy_folders_with_progress(source_root, target_root):
 
 
 # ADM (need to rerun this dataset)
-move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/ADM/imagenet_ai_0508_adm/train/ai',
-                      '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/ADM/train/ai')
-move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/ADM/imagenet_ai_0508_adm/val/ai',
-                      '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/ADM/val/ai')
+# move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/ADM/imagenet_ai_0508_adm/train/ai',
+#                       '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/ADM/train/ai')
+# move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/ADM/imagenet_ai_0508_adm/val/ai',
+#                       '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/ADM/val/ai')
 
 # BigGAN
 # move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/BigGAN/imagenet_ai_0419_biggan/train/ai',
@@ -73,10 +73,10 @@ move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data
 #                       '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/BigGAN/val/ai')
 
 # Midjourney
-move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/Midjourney/imagenet_midjourney/train/ai',
-                      '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/Midjourney/train/ai')
-move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/Midjourney/imagenet_midjourney/val/ai',
-                      '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/Midjourney/val/ai')
+# move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/Midjourney/imagenet_midjourney/train/ai',
+#                       '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/Midjourney/train/ai')
+# move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/Midjourney/imagenet_midjourney/val/ai',
+#                       '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/Midjourney/val/ai')
 
 # VQDM
 # move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/VQDM/imagenet_ai_0419_vqdm/train/ai',
@@ -85,17 +85,11 @@ move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data
 #                       '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/VQDM/val/ai')
 
 # glide
-move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/glide/imagenet_glide/train/ai',
-                      '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/glide/train/ai')
-move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/glide/imagenet_glide/val/ai',
-                      '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/glide/val/ai')
+# move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/glide/imagenet_glide/train/ai',
+#                       '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/glide/train/ai')
+# move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/glide/imagenet_glide/val/ai',
+#                       '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/glide/val/ai')
 
-
-# not executed
-# move_files_with_progress('~/autodl-tmp/GenImage/wukong/imagenet_ai_0424_wukong/train/nature',
-#                       '~/autodl-tmp/GenImage2/real/train/nature')
-# move_files_with_progress('~/autodl-tmp/GenImage/wukong/imagenet_ai_0424_wukong/val/nature',
-#                       '~/autodl-tmp/GenImage2/real/val/nature')
 
 # real
 # move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/stable_diffusion_v_1_4/imagenet_ai_0419_sdv4/train/nature',
@@ -108,48 +102,20 @@ move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data
 #                          '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/real/val/nature')
 
 # SD
-# move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/stable_diffusion_v_1_4/imagenet_ai_0419_sdv4/train/ai',
-#                          '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/SD/train/ai')
-# move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/stable_diffusion_v_1_4/imagenet_ai_0419_sdv4/val/ai',
-#                          '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/SD/val/ai')
-# move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/stable_diffusion_v_1_5/imagenet_ai_0424_sdv5/train/ai',
-#                          '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/SD/train/ai')
-# move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/stable_diffusion_v_1_5/imagenet_ai_0424_sdv5/val/ai',
-#                          '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/SD/val/ai')
-# move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/wukong/imagenet_ai_0424_wukong/train/ai',
-#                          '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/SD/train/ai')
-# move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/wukong/imagenet_ai_0424_wukong/val/ai',
-#                          '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/SD/val/ai')
+move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/stable_diffusion_v_1_4/imagenet_ai_0419_sdv4/train/ai',
+                         '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/SD/train/ai')
+move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/stable_diffusion_v_1_4/imagenet_ai_0419_sdv4/val/ai',
+                         '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/SD/val/ai')
+move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/stable_diffusion_v_1_5/imagenet_ai_0424_sdv5/train/ai',
+                         '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/SD/train/ai')
+move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/stable_diffusion_v_1_5/imagenet_ai_0424_sdv5/val/ai',
+                         '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/SD/val/ai')
+move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/wukong/imagenet_ai_0424_wukong/train/ai',
+                         '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/SD/train/ai')
+move_files_with_progress('/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/wukong/imagenet_ai_0424_wukong/val/ai',
+                         '/share/workspace2/haosheng/Few-Shot-AIGI-Detector/data/GenImage/SD/val/ai')
 
-# real
-# move_files_with_progress('~/autodl-tmp/GenImage/stable_diffusion_v_1_4/imagenet_ai_0419_sdv4/train/nature',
-#                       '~/autodl-tmp/GenImage2/real/train')
-# move_files_with_progress('~/autodl-tmp/GenImage/stable_diffusion_v_1_4/imagenet_ai_0419_sdv4/val/nature',
-#                       '~/autodl-tmp/GenImage2/real/val')
-# move_files_with_progress('~/autodl-tmp/GenImage/stable_diffusion_v_1_5/imagenet_ai_0424_sdv5/train/nature',
-#                       '~/autodl-tmp/GenImage2/real/train')
-# move_files_with_progress('~/autodl-tmp/GenImage/stable_diffusion_v_1_5/imagenet_ai_0424_sdv5/val/nature',
-#                       '~/autodl-tmp/GenImage2/real/val')
 
-# move_files_with_progress('~/autodl-tmp/GenImage/wukong/imagenet_ai_0424_wukong/train/nature',
-#                       '~/autodl-tmp/GenImage2/real/train/SD')
-# move_files_with_progress('~/autodl-tmp/GenImage/wukong/imagenet_ai_0424_wukong/val/nature',
-#                       '~/autodl-tmp/GenImage2/real/val/SD')
-
-# move_files_with_progress('~/autodl-tmp/GenImage/glide/imagenet_glide/train/nature',
-#                       '~/autodl-tmp/GenImage2/real/train/glide')
-# move_files_with_progress('~/autodl-tmp/GenImage/glide/imagenet_glide/val/nature',
-#                       '~/autodl-tmp/GenImage2/real/val/glide')
-
-# move_files_with_progress('~/autodl-tmp/GenImage/VQDM/imagenet_ai_0419_vqdm/train/nature',
-#                       '~/autodl-tmp/GenImage2/real/train/VQDM')
-# move_files_with_progress('~/autodl-tmp/GenImage/VQDM/imagenet_ai_0419_vqdm/val/nature',
-#                       '~/autodl-tmp/GenImage2/real/val/VQDM')
-
-# move_files_with_progress('~/autodl-tmp/GenImage/Midjourney/imagenet_midjourney/train/nature',
-#                       '~/autodl-tmp/GenImage2/real/train/Midjourney')
-# move_files_with_progress('~/autodl-tmp/GenImage/Midjourney/imagenet_midjourney/val/nature',
-#                       '~/autodl-tmp/GenImage2/real/val/Midjourney')
 
 
 print("\nAll file moving operations completed!")

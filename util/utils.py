@@ -82,6 +82,7 @@ def save_model(output_dir, model_name, **kwargs): # not beautiful, update furthe
 
     epoch = kwargs.pop("epoch", None)
     step =  kwargs.pop("step", None)
+    test_data = kwargs.pop("test_data", None)
 
     if epoch is not None:
         count = epoch
@@ -96,7 +97,7 @@ def save_model(output_dir, model_name, **kwargs): # not beautiful, update furthe
     
     
     # filename and path
-    save_filename = '%s_%s_best.pth' % (model_name, key_word)
+    save_filename = '%s_%s_%s_best.pth' % (test_data, model_name, key_word)
     save_path = os.path.join(output_dir, save_filename)
     
     # save data

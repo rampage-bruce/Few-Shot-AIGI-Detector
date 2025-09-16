@@ -38,6 +38,7 @@ def main():
 
     ########## setup dataset and dataloader #########
     logger.info("Creating training data loader...")
+    logger.info("running frozen-clip training...")
 
     # data we use in GenImage, real is nature from SDv14 & SDv15
     IMAGE_FOLDERS = ["real", "ADM", "BigGAN", "glide", "Midjourney", "SD", "VQDM"]
@@ -70,9 +71,10 @@ def main():
 
     # load the pretrained model locally
 
-    pretrained_cfg_overlay = {'file': r"/root/.cache/huggingface/hub/models--timm--resnet50.a1_in1k/pytorch_model.bin"}
-    model = timm.create_model("resnet50", pretrained=True, num_classes=1024,
-                              pretrained_cfg_overlay=pretrained_cfg_overlay)
+    # pretrained_cfg_overlay = {'file': r"/root/.cache/huggingface/hub/models--timm--resnet50.a1_in1k/pytorch_model.bin"}
+    # model = timm.create_model("resnet50", pretrained=True, num_classes=1024,
+    #                           pretrained_cfg_overlay=pretrained_cfg_overlay)
+    model = timm.create_model("resnet50", pretrained=True, num_classes=1024)
     print(model)
     model = model.to(args.device)
 
@@ -264,9 +266,9 @@ def main():
                     for (real_batch, _), (fake_batch, _) in tqdm(
                             zip(val_dataloaders["real"], val_dataloaders[VAL_FOLDERS[i]])):
                         # this code address the unalignment of real_batch and fake_batch when running in distributed mode
-                        min_size = min(real_batch.size(0), fake_batch.size(0))
-                        real_batch = real_batch[:min_size]
-                        fake_batch = fake_batch[:min_size]
+                        # min_size = min(real_batch.size(0), fake_batch.size(0))
+                        # real_batch = real_batch[:min_size]
+                        # fake_batch = fake_batch[:min_size]
 
                         batch_data = torch.stack([real_batch, fake_batch], dim=0)  # (2, task_size, c, h, w)
                         batch_data = batch_data.to(args.device)
@@ -317,7 +319,8 @@ def main():
                                 'optimizer': optimizer,
                                 'scheduler': scheduler,
                                 'scaler': scaler,
-                                'args': args
+                                'args': args,
+                                'test_data': args.exclude_class,
                             }
 
                             save_model(os.path.join(args.output_dir, "ckpt"), 'clip', **kwargs)
