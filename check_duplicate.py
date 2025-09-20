@@ -27,7 +27,7 @@ for class_name in os.listdir(data_root):
             if os.path.exists(split_path):
                 print(split_path)
                 for file in os.listdir(split_path):
-                    if file.endswith(('.png', '.jpg', '.jpeg')):
+                    if file.lower().endswith(('.png', '.jpg', '.jpeg')):
                         file_path = os.path.join(split_path, file)
                         with open(file_path, 'rb') as f:
                             file_hash = hashlib.md5(f.read()).hexdigest()

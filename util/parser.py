@@ -20,6 +20,7 @@ class ModelParser():
         self.parser.add_argument('--num_workers', type=int, default=8,  help='Number of workers in dataloader. ')
 
         self.parser.add_argument('--seed', type=int, default=None, help='Random seed for the main processes. ')
+        self.parser.add_argument('--cache_dir',type=str,default='.dataset_cache',help='Cache for fast dataloader. ')
     
     @property
     def args(self): 

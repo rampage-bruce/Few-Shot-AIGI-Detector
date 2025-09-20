@@ -35,13 +35,9 @@ def main():
     best_acc = 0
     best_ap = 0
 
-    is_master = args.local_rank == 0
     ########## setup dataset and dataloader #########
     logger.info("Creating training data loader...")
     logger.info("running baseline training...")
-
-    # Check if we're the master process
-    is_master = args.local_rank == 0
 
     # data we use in GenImage, real is nature from SDv14 & SDv15
     IMAGE_FOLDERS = ["real", "ADM", "BigGAN", "glide", "Midjourney", "SD", "VQDM"]
@@ -51,36 +47,13 @@ def main():
     # put at last
     VAL_FOLDERS = IMAGE_FOLDERS + [args.exclude_class]
 
-    # pre-cache datasets
-    if is_master:  # Only do this on the master process
-        logger.info("Pre-caching datasets...")
-        # Pre-cache all training datasets
-        for folder in IMAGE_FOLDERS:
-            train_path = os.path.join(args.data_root, folder, "train")
-            if os.path.exists(train_path):
-                pre_cache_dataset(train_path, cache_dir=args.cache_dir)
-            else:
-                logger.info(f"Training path does not exist: {train_path}")
-
-        # Pre-cache all validation datasets
-        for folder in VAL_FOLDERS:
-
-            val_path = os.path.join(args.data_root, folder, "val")
-            if os.path.exists(val_path):
-                pre_cache_dataset(val_path, cache_dir=args.cache_dir)
-            else:
-                logger.info(f"Validation path does not exist: {val_path}")
-
-    # Wait for master to finish caching
-    if dist.is_initialized():
-        dist.barrier()
-
     train_iters = {
         folder: setup_infinity_train_dataloader(
             folder_path=os.path.join(args.data_root, folder, "train"),
             batch_size=(args.num_support_train + args.num_query_train) * args.batch_size,  # batch_size * task_size
             num_workers=args.num_workers,
-            skip_validation=False
+            skip_validation=True,       # set True for prebuilt cache
+            cache_dir = args.cache_dir
         ) for folder in IMAGE_FOLDERS
     }
 
@@ -89,7 +62,8 @@ def main():
             folder_path=os.path.join(args.data_root, folder, "val"),
             batch_size=args.num_support_val + args.num_query_val,
             num_workers=args.num_workers,
-            skip_validation=False
+            skip_validation=True,
+            cache_dir=args.cache_dir
         ) for folder in VAL_FOLDERS
     }
 

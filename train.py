@@ -21,6 +21,7 @@ import open_clip
 import torch.nn.functional as F
 import torch.nn as nn
 import torch.distributed as dist
+import gc
 
 
 def main(): 
@@ -54,29 +55,28 @@ def main():
 
 
     # pre-cache datasets
-    if is_master:  # Only do this on the master process
-        logger.info("Pre-caching datasets...")
-        # Pre-cache all training datasets
-        for folder in IMAGE_FOLDERS:
-            train_path = os.path.join(args.data_root, folder, "train")
-            if os.path.exists(train_path):
-                pre_cache_dataset(train_path, cache_dir=args.cache_dir)
-            else:
-                logger.info(f"Training path does not exist: {train_path}")
-
-        # Pre-cache all validation datasets
-        for folder in VAL_FOLDERS:
-            
-            val_path = os.path.join(args.data_root, folder, "val")
-            if os.path.exists(val_path):
-                pre_cache_dataset(val_path, cache_dir=args.cache_dir)
-            else:
-                logger.info(f"Validation path does not exist: {val_path}")
-
-    # Wait for master to finish caching
-    if dist.is_initialized():
-        dist.barrier()
-
+    # if is_master:  # Only do this on the master process
+    #     logger.info("Pre-caching datasets...")
+    #     # Pre-cache all training datasets
+    #     for folder in IMAGE_FOLDERS:
+    #         train_path = os.path.join(args.data_root, folder, "train")
+    #         if os.path.exists(train_path):
+    #             pre_cache_dataset(train_path, cache_dir=args.cache_dir)
+    #         else:
+    #             logger.info(f"Training path does not exist: {train_path}")
+    #
+    #     # Pre-cache all validation datasets
+    #     for folder in VAL_FOLDERS:
+    #
+    #         val_path = os.path.join(args.data_root, folder, "val")
+    #         if os.path.exists(val_path):
+    #             pre_cache_dataset(val_path, cache_dir=args.cache_dir)
+    #         else:
+    #             logger.info(f"Validation path does not exist: {val_path}")
+    #
+    # # Wait for master to finish caching
+    # if dist.is_initialized():
+    #     dist.barrier()
 
 
     train_iters = {
@@ -84,7 +84,8 @@ def main():
             folder_path=os.path.join(args.data_root, folder, "train"), 
             batch_size=(args.num_support_train + args.num_query_train) * args.batch_size, # batch_size * task_size
             num_workers=args.num_workers,
-            skip_validation=False
+            skip_validation=False,
+            cache_dir=args.cache_dir
         ) for folder in IMAGE_FOLDERS
     }
 
@@ -94,7 +95,8 @@ def main():
             folder_path=os.path.join(args.data_root, folder, "val"), 
             batch_size=args.num_support_val + args.num_query_val, 
             num_workers=args.num_workers,
-            skip_validation=False
+            skip_validation=False,
+            cache_dir = args.cache_dir
         ) for folder in VAL_FOLDERS
     }
     #################################################
@@ -148,7 +150,7 @@ def main():
                 nn.LayerNorm(bottleneck_dim)
             )
             self.fusion = nn.Sequential(
-                nn.Linear(),
+                nn.Linear(bottleneck_dim*2,out_dim),
                 nn.ReLU(),
                 nn.LayerNorm(out_dim),
                 nn.Dropout(0.2)
@@ -245,11 +247,12 @@ def main():
             outputs_clip = clip_model(batch_data)
 
             # implement normalization before concatenation in case of overweight of one embedding
-            outputs_resnet =F.normalize(outputs_resnet,p=2,dim=-1)
-            outputs_clip = F.normalize(outputs_clip,p=2,dim=-1)
-            
-            outputs = torch.cat((outputs_resnet, outputs_clip), dim=-1)
-            outputs = fusion_head(outputs)
+            # outputs_resnet =F.normalize(outputs_resnet,p=2,dim=-1)
+            # outputs_clip = F.normalize(outputs_clip,p=2,dim=-1)
+            #
+            # outputs = torch.cat((outputs_resnet, outputs_clip), dim=-1)
+            # outputs = fusion_head(outputs)
+            outputs = fusion_head(outputs_resnet = outputs_resnet, output_clip = outputs_clip)
 
         outputs = rearrange(outputs, '(n b t) l -> b t n l', n=args.num_class_train, b=args.batch_size) # we change the subscript sequence
 
@@ -261,7 +264,7 @@ def main():
 
         del outputs_resnet, outputs_clip, outputs
         torch.cuda.empty_cache()
-        
+        gc.collect()
         # accumulate
         if step % args.accumulation_steps == 0:
             effective_step += 1
@@ -275,7 +278,8 @@ def main():
 
             if scheduler is not None: 
                 scheduler.step() # per effective iter
-        
+            torch.cuda.empty_cache()
+
         # logger info
         if step % args.log_interval == 0:
             logger.logkv("step", step)
@@ -335,10 +339,11 @@ def main():
                             outputs_resnet = model(batch_data)
                             outputs_clip = clip_model(batch_data)
 
-                            outputs_resnet = F.normalize(outputs_resnet, p=2, dim=-1)
-                            outputs_clip = F.normalize(outputs_clip, p=2, dim=-1)
-                            outputs = torch.cat((outputs_resnet, outputs_clip), dim=-1)
-                            outputs = fusion_head(outputs)
+                            # outputs_resnet = F.normalize(outputs_resnet, p=2, dim=-1)
+                            # outputs_clip = F.normalize(outputs_clip, p=2, dim=-1)
+                            # outputs = torch.cat((outputs_resnet, outputs_clip), dim=-1)
+                            # outputs = fusion_head(outputs)
+                            outputs = fusion_head(outputs_resnet=outputs_resnet, output_clip=outputs_clip)
 
                         outputs = rearrange(outputs, '(n b) l -> 1 b n l', n=2) # we change the subscript sequence
 

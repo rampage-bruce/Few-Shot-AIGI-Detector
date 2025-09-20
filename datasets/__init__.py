@@ -61,7 +61,7 @@ class RobustImageFolder(ImageFolder):
 
 class FastImageFolder(ImageFolder):
     """Optimized ImageFolder with efficient caching and parallel validation"""
-    _global_cache = {}  # Class-level cache to share across instances
+    # _global_cache = {}  # Class-level cache to share across instances
 
     def __init__(self, root, transform=None, cache_dir=".dataset_cache", skip_validation=False):
         self.root = root
@@ -74,27 +74,27 @@ class FastImageFolder(ImageFolder):
         self.cache_key = self._generate_cache_key(root)
         self.cache_file = os.path.join(cache_dir, f"{self.cache_key}.pkl")
 
-        # Try to load from global cache first
-        if self.cache_key in FastImageFolder._global_cache:
-            self.valid_files = FastImageFolder._global_cache[self.cache_key]
-            logger.info(f"Using global cache for {root} with {len(self.valid_files)} files")
+        # Try to load from global cache first (remove the global cache)
+        # if self.cache_key in FastImageFolder._global_cache:
+        #     self.valid_files = FastImageFolder._global_cache[self.cache_key]
+        #     logger.info(f"Using global cache for {root} with {len(self.valid_files)} files")
+
+        # Try to load from disk cache
+        self.valid_files = self._load_cache()
+        if self.valid_files is not None:
+            logger.info(f"Loaded cache for {root} with {len(self.valid_files)} files")
+            # FastImageFolder._global_cache[self.cache_key] = self.valid_files
         else:
-            # Try to load from disk cache
-            self.valid_files = self._load_cache()
-            if self.valid_files is not None:
-                logger.info(f"Loaded cache for {root} with {len(self.valid_files)} files")
-                FastImageFolder._global_cache[self.cache_key] = self.valid_files
+            # Need to build cache
+            if skip_validation:
+                logger.warning("No cache found but skip_validation=True. This may cause errors.")
+                self.valid_files = set()
             else:
-                # Need to build cache
-                if skip_validation:
-                    logger.warning("No cache found but skip_validation=True. This may cause errors.")
-                    self.valid_files = set()
-                else:
-                    logger.info(f"Building cache for {root}. This may take a while...")
-                    self.valid_files = self._build_cache()
-                    self._save_cache()
-                    FastImageFolder._global_cache[self.cache_key] = self.valid_files
-                    logger.info(f"Cache built with {len(self.valid_files)} valid files")
+                logger.info(f"Building cache for {root}. This may take a while...")
+                self.valid_files = self._build_cache()
+                self._save_cache()
+                # FastImageFolder._global_cache[self.cache_key] = self.valid_files
+                logger.info(f"Cache built with {len(self.valid_files)} valid files")
 
         # Initialize with precomputed valid files
         super().__init__(
@@ -210,6 +210,9 @@ class FastImageFolder(ImageFolder):
                     # Verify cache is not stale
                     if cache_data.get('cache_key') == self.cache_key:
                         return set(cache_data['valid_files'])
+            except (EOFError, pickle.UnpicklingError) as e:
+                logger.warning(f"Corrupted cache file {self.cache_file}: {e}")
+                os.remove(self.cache_file)  # Remove corrupted cache
             except Exception as e:
                 logger.warning(f"Failed to load cache: {e}")
         return None
@@ -375,7 +378,8 @@ def setup_infinity_train_dataloader(
     pin_memory=True,
     drop_last=True,
     is_distributed=None,
-    skip_validation = False
+    skip_validation = False,
+    cache_dir = '.dataset_cache'
 ):
     """无限数据流加载器"""
     loader = setup_dataloader(
@@ -386,7 +390,8 @@ def setup_infinity_train_dataloader(
         drop_last=drop_last,
         is_train=True,
         is_distributed=is_distributed,
-        skip_validation = skip_validation
+        skip_validation = skip_validation,
+        cache_dir = cache_dir
     )
 
     epoch = 0
@@ -407,7 +412,8 @@ def setup_val_dataloader(
     pin_memory=True,
     drop_last=False,  # 验证集通常不drop_last
     is_distributed=None,
-    skip_validation = False
+    skip_validation = False,
+    cache_dir = '.dataset_cache',
 ):
     """验证集加载器"""
     return setup_dataloader(
@@ -419,5 +425,6 @@ def setup_val_dataloader(
         is_train=False,
         # is_distributed=is_distributed
         is_distributed = False, # avoid distributed processing when running evaluation
-        skip_validation = skip_validation
+        skip_validation = skip_validation,
+        cache_dir = cache_dir
     )
