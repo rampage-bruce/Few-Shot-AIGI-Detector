@@ -32,14 +32,10 @@ def main():
     # terminal writer and file writer
     logger.setup(log_dir=args.output_dir, device=args.device)
     #################################################
-    best_acc = 0
-    best_ap = 0
 
     best_acc = 0
     best_ap = 0
 
-    # Check if we're the master process
-    is_master = args.local_rank == 0
 
     ########## setup dataset and dataloader #########
     logger.info("Creating training data loader...")
@@ -52,31 +48,6 @@ def main():
     logger.info(f"Exclude class: {args.exclude_class}")
     # put at last
     VAL_FOLDERS = IMAGE_FOLDERS + [args.exclude_class]
-
-
-    # pre-cache datasets
-    # if is_master:  # Only do this on the master process
-    #     logger.info("Pre-caching datasets...")
-    #     # Pre-cache all training datasets
-    #     for folder in IMAGE_FOLDERS:
-    #         train_path = os.path.join(args.data_root, folder, "train")
-    #         if os.path.exists(train_path):
-    #             pre_cache_dataset(train_path, cache_dir=args.cache_dir)
-    #         else:
-    #             logger.info(f"Training path does not exist: {train_path}")
-    #
-    #     # Pre-cache all validation datasets
-    #     for folder in VAL_FOLDERS:
-    #
-    #         val_path = os.path.join(args.data_root, folder, "val")
-    #         if os.path.exists(val_path):
-    #             pre_cache_dataset(val_path, cache_dir=args.cache_dir)
-    #         else:
-    #             logger.info(f"Validation path does not exist: {val_path}")
-    #
-    # # Wait for master to finish caching
-    # if dist.is_initialized():
-    #     dist.barrier()
 
 
     train_iters = {
@@ -209,30 +180,6 @@ def main():
 
         # select classes for single prototypical task (randomly select a subset of classes as training classes)
         selected_classes = random.sample(IMAGE_FOLDERS, args.num_class_train)
-
-        # Use those indices to get both classes and labels
-        # selected_indices = random.sample(range(len(IMAGE_FOLDERS)), args.num_class_train)
-        # selected_classes = [IMAGE_FOLDERS[i] for i in selected_indices]
-        # selected_labels = labels[selected_indices]  # tensor of selected label IDs
-
-        # # get data with corresponding labels
-        # all_images = []
-        # all_labels = []
-        #
-        # for label_idx, class_name in zip(selected_labels,selected_classes):
-        #     images = next(train_iters[class_name])[0]
-        #     all_images.append(images)
-        #
-        #     # Create new label tensor for this batch
-        #     labels = torch.full((args.batch_size * args.num_query_train,), label_idx) # shape (batch_size * query_size)
-        #     all_labels.append(labels)
-        #
-        # # Combine all class-wise batches
-        # batch_data = torch.stack(all_images, dim=0)  # (num_class, batch_size, C, H, W)
-        # batch_data = batch_data.to(args.device)
-        #
-        # batch_labels = torch.stack(all_labels, dim=0).reshape(-1).to(args.device)  # (num_class*batch_size*query_size)
-        # batch_labels = batch_labels.to(args.device)
 
         # get data
         batch_data = torch.stack([next(train_iters[c])[0] for c in selected_classes], dim=0) # (num_class, batch * task_size, c, h, w)

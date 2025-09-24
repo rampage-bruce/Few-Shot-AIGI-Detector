@@ -289,6 +289,7 @@ def setup_dataloader(
         pin_memory=pin_memory,
         drop_last=drop_last,
         persistent_workers=num_workers > 0,
+        prefetch_factor=4 if is_train else 2,
         collate_fn=lambda x: torch.utils.data.default_collate(
             [item for item in x if item[0] is not None]  # Filter invalid data
         )
@@ -373,8 +374,8 @@ def get_transforms(is_train=True):
 
 def setup_infinity_train_dataloader(
     folder_path,
-    batch_size=20,
-    num_workers=16,
+    batch_size=16,
+    num_workers=4,
     pin_memory=True,
     drop_last=True,
     is_distributed=None,

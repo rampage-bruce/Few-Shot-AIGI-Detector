@@ -1,0 +1,362 @@
+# -*- coding: utf-8 -*-
+""" Train ResNet50 for classification.
+"""
+
+import os
+import random
+import torch
+from tqdm import tqdm
+
+from torch.amp import autocast, GradScaler
+import timm
+from einops import rearrange
+from torchmetrics.classification import Accuracy, AveragePrecision
+
+from model.prototypical_utils import compute_prototypical_loss
+from datasets import setup_infinity_train_dataloader, setup_val_dataloader, pre_cache_dataset
+from util.parser import TrainParser
+from util.utils import save_model, setup_dist
+import util.logger as logger
+import open_clip
+import torch.nn.functional as F
+import torch.nn as nn
+import torch.distributed as dist
+import gc
+from transformers import AutoModel
+
+def main():
+    #################### prepare ####################
+    args = TrainParser().args
+    setup_dist(args)  # ddp setup
+
+    # terminal writer and file writer
+    logger.setup(log_dir=args.output_dir, device=args.device)
+    #################################################
+    best_acc = 0
+    best_ap = 0
+
+    os.environ['XFORMERS_DISABLED'] = '1'  # fastest workaround; set before loading dinov2
+
+
+    ########## setup dataset and dataloader #########
+    logger.info("Creating training data loader...")
+    logger.info("runing full fine-tune training with DINO-v2 frozen...")u
+
+    # data we use in GenImage, real is nature from SDv14 & SDv15
+    IMAGE_FOLDERS = ["real", "ADM", "BigGAN", "glide", "Midjourney", "SD", "VQDM"]
+    # this will remove the class of data for testing
+    IMAGE_FOLDERS.remove(args.exclude_class)
+    logger.info(f"Exclude class: {args.exclude_class}")
+    # put at last
+    VAL_FOLDERS = IMAGE_FOLDERS + [args.exclude_class]
+
+    train_iters = {
+        folder: setup_infinity_train_dataloader(
+            folder_path=os.path.join(args.data_root, folder, "train"),
+            batch_size=(args.num_support_train + args.num_query_train) * args.batch_size,  # batch_size * task_size
+            num_workers=args.num_workers,
+            skip_validation=False,
+            cache_dir=args.cache_dir
+        ) for folder in IMAGE_FOLDERS
+    }
+
+    val_dataloaders = {
+        folder: setup_val_dataloader(
+            folder_path=os.path.join(args.data_root, folder, "val"),
+            batch_size=args.num_support_val + args.num_query_val,
+            num_workers=args.num_workers,
+            skip_validation=False,
+            cache_dir=args.cache_dir
+        ) for folder in VAL_FOLDERS
+    }
+    #################################################
+
+    ################## create model #################
+    logger.info("Creating model 'resnet50'... ")
+
+    # load the pretrained model locally
+
+    # pretrained_cfg_overlay = {'file' : r"/root/.cache/huggingface/hub/models--timm--resnet50.a1_in1k/pytorch_model.bin"}
+    # model = timm.create_model("resnet50", pretrained=True, num_classes=1024, pretrained_cfg_overlay=pretrained_cfg_overlay)
+    model = timm.create_model("resnet50", pretrained=True, num_classes=1024)
+    print(model)
+    model = model.to(args.device)
+
+    # load CLIP model
+    logger.info("Creating model 'clip'... ")
+    clip_model, _, preprocess = open_clip.create_model_and_transforms('ViT-B-32', pretrained='laion2b_s34b_b79k')
+    print(clip_model.visual)
+
+    # # Freeze all layers
+    for param in clip_model.visual.parameters():
+        param.requires_grad = False
+
+    # # Unfreeze the 10th transformer block (index 9 for 10th layer)
+    target_block_idx = 9
+    for param in clip_model.visual.transformer.resblocks[target_block_idx].parameters():
+        param.requires_grad = True
+
+    clip_model = clip_model.visual.to(args.device)
+
+    # load DINO-v2 model
+    logger.info("Creating model 'DINOv2'... ")
+    # dinov2_model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
+    dinov2_model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')       # smaller version
+    # dinov2_model = AutoModel.from_pretrained('facebook/dinov2-base')
+    # Enable gradient checkpoint
+    # dinov2_model.gradient_checkpointing_enable()
+
+    for param in dinov2_model.parameters():
+        param.requires_grad = False
+    dinov2_model = dinov2_model.to(args.device)
+
+    # ensure dimension
+    clip_output_dim = 512
+    resnet_output_dim = 1024
+    dinov2_output_dim = 384     # this dimension for DINO-v2 S change to 768 if using DINO-v2 B
+
+    # Initialize a Fusion MLP projection
+    class FusionHead(nn.Module):
+        def __init__(self, clip_dim, resnet_dim, dinov2_output_dim, bottleneck_dim, out_dim=512):
+            super().__init__()
+            self.resnet_proj = nn.Sequential(
+                nn.Linear(resnet_dim, bottleneck_dim),
+                nn.ReLU(),
+                nn.LayerNorm(bottleneck_dim)
+            )
+            self.clip_proj = nn.Sequential(
+                nn.Linear(clip_dim, bottleneck_dim),
+                nn.ReLU(),
+                nn.LayerNorm(bottleneck_dim)
+            )
+            self.dino_proj = nn.Sequential(
+                nn.Linear(dinov2_output_dim, bottleneck_dim),
+                nn.ReLU(),
+                nn.LayerNorm(bottleneck_dim)
+            )
+            self.fusion = nn.Sequential(
+                nn.Linear(bottleneck_dim * 3, out_dim),
+                nn.ReLU(),
+                nn.LayerNorm(out_dim),
+                nn.Dropout(0.2)
+            )
+
+        def forward(self, outputs_resnet, output_clip, output_dino):
+            resnet_proj = self.resnet_proj(outputs_resnet)
+            clip_proj = self.clip_proj(output_clip)
+            dino_proj = self.dino_proj(output_dino)
+            combined = torch.cat((resnet_proj, clip_proj, dino_proj), dim=-1)
+            return self.fusion(combined)
+
+    fusion_head = FusionHead(clip_dim=clip_output_dim,
+                             resnet_dim=resnet_output_dim,
+                             dinov2_output_dim=dinov2_output_dim,
+                             bottleneck_dim=512,
+                             out_dim=1024)
+    fusion_head.to(args.device)
+    #################################################
+
+    ######### create optimizer and criterion ########
+    logger.info("Creating optimizer and scheduler... ")
+
+    # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+
+    # optimizer including clip trainable parameters
+    optimizer = torch.optim.Adam(
+        list(model.parameters()) + list(filter(lambda p: p.requires_grad, clip_model.parameters())) + list(
+            fusion_head.parameters()),
+        lr=args.lr
+    )
+
+    print(optimizer)
+
+    # scheduler
+    scheduler = torch.optim.lr_scheduler.StepLR(
+        optimizer=optimizer,
+        gamma=args.lr_scheduler_gamma,
+        step_size=args.lr_scheduler_step
+    )
+    print(scheduler)
+    #################################################
+
+    #################### training ###################
+    logger.info("Start training for %d steps. " % args.total_training_steps)
+
+    # scaler of the gradient
+    scaler = GradScaler(enabled=args.use_fp16)
+
+    effective_step = 0
+    # starts looping
+    for step in range(1, args.total_training_steps + 1):
+        model.train()
+        clip_model.train()
+        fusion_head.train()
+        dinov2_model.eval()
+
+        optimizer.zero_grad()
+
+        # select classes for single prototypical task (randomly select a subset of classes as training classes)
+        selected_classes = random.sample(IMAGE_FOLDERS, args.num_class_train)
+
+        # get data
+        batch_data = torch.stack([next(train_iters[c])[0] for c in selected_classes],
+                                 dim=0)  # (num_class, batch * task_size, c, h, w)
+        batch_data = batch_data.to(args.device)
+
+        # make labels (few-shot, repeat the class label set to align with query batches)
+        labels = torch.arange(0, args.num_class_train, device=args.device).repeat(
+            args.batch_size * args.num_query_train)
+
+        batch_data = rearrange(batch_data, 'n b c h w -> (n b) c h w')
+        with autocast(enabled=args.use_fp16, device_type="cuda", dtype = torch.float16):
+            with torch.no_grad():
+                output_dino_feats = dinov2_model(batch_data)
+                if output_dino_feats.ndim ==3:
+                    output_dino = output_dino_feats[:,0,:].detach()
+                else:
+                    output_dino=output_dino_feats.detach()
+
+            outputs_resnet = model(batch_data)
+            outputs_clip = clip_model(batch_data)
+            outputs = fusion_head(outputs_resnet=outputs_resnet, output_clip=outputs_clip, output_dino = output_dino)
+
+        outputs = rearrange(outputs, '(n b t) l -> b t n l', n=args.num_class_train,
+                            b=args.batch_size)  # we change the subscript sequence
+
+        # first calculate the prototypical embedding and then perform KNN, lastly, cross-entropy loss
+        loss, _ = compute_prototypical_loss(outputs, labels, args.num_support_train)
+
+        logger.logkv_mean("loss", loss.item())
+        scaler.scale(loss / args.accumulation_steps).backward()
+
+        del outputs_resnet, outputs_clip, output_dino, outputs
+        torch.cuda.empty_cache()
+        gc.collect()
+        # accumulate
+        if step % args.accumulation_steps == 0:
+            effective_step += 1
+
+            scaler.unscale_(optimizer)
+            # other options if you want
+
+            scaler.step(optimizer)
+            scaler.update()
+            optimizer.zero_grad()
+
+            if scheduler is not None:
+                scheduler.step()  # per effective iter
+            torch.cuda.empty_cache()
+
+        # logger info
+        if step % args.log_interval == 0:
+            logger.logkv("step", step)
+            logger.logkv("effective_step", effective_step)
+            logger.logkv("lr", scheduler.get_last_lr()[0] if scheduler is not None else args.lr)
+            logger.dumpkvs()
+
+        # save checkpoint
+        if step % args.save_interval == 0:
+            logger.info('Save checkpoint at step: %d', step)
+
+            # kwargs = {
+            #    'step': step,
+            #    'effective_step': effective_step,
+            #    'model': model,
+            #    'optimizer': optimizer,
+            #    'scheduler': scheduler,
+            #    'scaler': scaler,
+            #    'args': args
+            # }
+
+            # save_model(os.path.join(args.output_dir, "ckpt"), args.model, **kwargs)
+            # torch.cuda.empty_cache()
+
+        ##### evaluation #####
+        if step % args.eval_interval == 0:
+            logger.info('Evaluating at step: %d', step)
+            model.eval()
+            clip_model.eval()
+            fusion_head.eval()
+
+            acc_calculator = Accuracy(task="multiclass", num_classes=2)
+            ap_calculator = AveragePrecision(task="multiclass", num_classes=2, thresholds=10)
+
+            # build dataset
+            with torch.no_grad():
+                for i in range(1, len(VAL_FOLDERS)):
+                    prob_list = []
+                    label_list = []
+                    for (real_batch, _), (fake_batch, _) in tqdm(
+                            zip(val_dataloaders["real"], val_dataloaders[VAL_FOLDERS[i]])):
+                        # this code address the unalignment of real_batch and fake_batch when running in distributed mode
+                        # min_size = min(real_batch.size(0), fake_batch.size(0))
+                        # real_batch = real_batch[:min_size]
+                        # fake_batch = fake_batch[:min_size]
+
+                        batch_data = torch.stack([real_batch, fake_batch], dim=0)  # (2, task_size, c, h, w)
+                        batch_data = batch_data.to(args.device)
+
+                        batch_data = rearrange(batch_data, 'n b c h w -> (n b) c h w')
+                        # (0,1)
+                        labels = torch.arange(0, 2, device=args.device).repeat(args.num_query_val)
+
+                        with autocast(enabled=args.use_fp16, device_type="cuda"):
+                            outputs_resnet = model(batch_data)
+                            outputs_clip = clip_model(batch_data)
+                            output_dino = dinov2_model(batch_data)
+                            outputs = fusion_head(outputs_resnet=outputs_resnet, output_clip=outputs_clip,
+                                                  output_dino=output_dino)
+
+                        outputs = rearrange(outputs, '(n b) l -> 1 b n l', n=2)  # we change the subscript sequence
+
+                        _, scores = compute_prototypical_loss(outputs, labels, args.num_support_val)
+
+                        # probability of each class (real or fake)
+                        prob = scores.softmax(dim=-1).cpu()
+                        labels = labels.cpu()
+
+                        prob_list.append(prob)
+                        label_list.append(labels)
+
+                    total_prob = torch.cat(prob_list, dim=0)
+                    total_label = torch.cat(label_list, dim=0)
+                    acc = acc_calculator(total_prob, total_label)
+                    ap = ap_calculator(total_prob, total_label)
+
+                    logger.info(
+                        f'Evaluation on {VAL_FOLDERS[i]} done. evaluating num: {len(total_prob)}, accuracy: {acc}, average precision: {ap}. ')
+
+                    # evaluation on unseen data
+                    if VAL_FOLDERS[i] == args.exclude_class:
+                        if acc > best_acc:
+                            best_acc = acc
+                            best_ap = ap
+                            logger.info(
+                                f'Save checkpoint, Best accuracy so far: {best_acc}, best AP: {best_ap}, in step: {step}')
+                            kwargs = {
+                                'step': step,
+                                'effective_step': effective_step,
+                                'model': model,
+                                'optimizer': optimizer,
+                                'scheduler': scheduler,
+                                'scaler': scaler,
+                                'args': args,
+                                'test_data': args.exclude_class,
+                            }
+
+                            save_model(os.path.join(args.output_dir, "ckpt"), 'clip', **kwargs)
+
+        logger.info(f'Best accuracy so far: {best_acc}, best AP: {best_ap}, in step: {step}')
+
+        # save_model(os.path.join(args.output_dir, "ckpt"), args.model, **kwargs)
+
+        # logger.info(f'Best accuracy so far: {best_acc}, best AP: {best_ap}, in step: {step}')
+
+        ##### evaluation done #####
+
+    #################################################
+
+
+if __name__ == '__main__':
+    main()
+

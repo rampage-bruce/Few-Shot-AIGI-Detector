@@ -3,7 +3,7 @@ import os
 
 data_root = 'data/GenImage'
 folders = ['real', 'ADM', 'BigGAN', 'glide', 'Midjourney', 'SD', 'VQDM']
-cache_dir = '.dataset_cache_2'
+cache_dir = '.dataset_cache_3'
 
 for folder in folders:
     train_path = os.path.join(data_root, folder, 'train')
