@@ -40,7 +40,7 @@ def main():
 
     ########## setup dataset and dataloader #########
     logger.info("Creating training data loader...")
-    logger.info("runing full fine-tune training with DINO-v2 frozen...")u
+    logger.info("runing full fine-tune training with DINO-v2 frozen...")
 
     # data we use in GenImage, real is nature from SDv14 & SDv15
     IMAGE_FOLDERS = ["real", "ADM", "BigGAN", "glide", "Midjourney", "SD", "VQDM"]
